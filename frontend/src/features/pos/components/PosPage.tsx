@@ -668,9 +668,10 @@ export default function PosPage() {
                                   max="100"
                                   step="1"
                                   value={discountValue}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => {
                                     setDiscountType('percentage');
-                                    setDiscountValue(e.target.value);
+                                    setDiscountValue(e.target.value.replace(/^0+(?=\d)/, ''));
                                   }}
                                   placeholder="Porcentaje manual (ej. 8)..."
                                   className="w-full text-xs pr-7 pl-3 py-1.5 rounded-lg bg-surface text-on-surface border border-surface-container focus:ring-1 focus:ring-primary focus:outline-none font-mono"
@@ -704,9 +705,10 @@ export default function PosPage() {
                                   min="0"
                                   step="0.50"
                                   value={discountValue}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => {
                                     setDiscountType('amount');
-                                    setDiscountValue(e.target.value);
+                                    setDiscountValue(e.target.value.replace(/^0+(?=\d)/, ''));
                                   }}
                                   placeholder="Monto fijo a descontar..."
                                   className="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg bg-surface text-on-surface border border-surface-container focus:ring-1 focus:ring-primary focus:outline-none font-mono font-bold"
@@ -809,7 +811,8 @@ export default function PosPage() {
                         step="0.50"
                         min="0"
                         value={receivedAmountBs}
-                        onChange={(e) => setReceivedAmountBs(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => setReceivedAmountBs(e.target.value.replace(/^0+(?=\d)/, ''))}
                         placeholder={totalBs}
                         className="w-full pl-8 pr-2 py-1 text-sm font-mono font-bold text-right bg-surface rounded-lg border border-surface-container focus:ring-1 focus:ring-primary focus:outline-none"
                       />

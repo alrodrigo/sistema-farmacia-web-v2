@@ -287,7 +287,8 @@ export default function CashCloseModal({ isOpen, onClose }: CashCloseModalProps)
                                             type="number"
                                             step="0.50"
                                             value={countedCashBs}
-                                            onChange={(e) => setCountedCashBs(e.target.value)}
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={(e) => setCountedCashBs(e.target.value.replace(/^0+(?=\d)/, ''))}
                                             className="w-full pl-9 pr-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-mono text-base font-bold border border-surface-container focus:ring-2 focus:ring-primary focus:outline-none"
                                             placeholder="0.00"
                                         />

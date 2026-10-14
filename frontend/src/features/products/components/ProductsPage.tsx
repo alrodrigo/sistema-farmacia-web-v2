@@ -268,17 +268,16 @@ export default function ProductsPage() {
         return filteredProducts.slice(start, start + pageSize);
     }, [filteredProducts, currentPage, pageSize]);
 
-    // 5. MODAL ACTIONS (Create / Edit)
     const openCreateModal = () => {
         if (!canCreate) return;
         setEditingProduct(null);
         setSku(''); setName(''); setActiveSubstance(''); setPharmaceuticalForm('Comprimido');
         setDescription(''); setPriceBs(''); setCostBs('');
-        setStock('0'); setCategoryId(''); setSupplierId(''); setExpirationDate(''); setLotNumber('');
+        setStock(''); setCategoryId(''); setSupplierId(''); setExpirationDate(''); setLotNumber('');
         setBatches([{
             lot_number: '',
             expiration_date: '',
-            stock: 0,
+            stock: '' as any,
         }]);
         setMinStock('3'); setIsPriority(false); setRequiresPrescription(false);
         setIsFormModalOpen(true);
@@ -1256,7 +1255,8 @@ export default function ProductsPage() {
                                                 step="0.01"
                                                 min="0"
                                                 value={costBs}
-                                                onChange={(e) => setCostBs(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
+                                                onChange={(e) => setCostBs(e.target.value.replace(/^0+(?=\d)/, ''))}
                                                 placeholder="0.00"
                                                 required
                                                 className="w-full h-[38px] pl-8 pr-2.5 rounded bg-surface-container-lowest text-on-surface font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary border border-surface-container"
@@ -1276,7 +1276,8 @@ export default function ProductsPage() {
                                                 step="0.01"
                                                 min="0"
                                                 value={priceBs}
-                                                onChange={(e) => setPriceBs(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
+                                                onChange={(e) => setPriceBs(e.target.value.replace(/^0+(?=\d)/, ''))}
                                                 placeholder="0.00"
                                                 required
                                                 className="w-full h-[38px] pl-8 pr-2.5 rounded bg-surface-container-lowest text-on-surface font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary border border-surface-container"
@@ -1300,12 +1301,13 @@ export default function ProductsPage() {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={batches.length > 0 ? totalBatchesStock : stock}
+                                                value={batches.length > 0 ? (totalBatchesStock === 0 ? '' : totalBatchesStock) : (stock === '0' || stock === '' ? '' : stock)}
+                                                onFocus={(e) => e.target.select()}
                                                 onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setStock(val);
+                                                    const clean = e.target.value.replace(/^0+(?=\d)/, '');
+                                                    setStock(clean);
                                                     if (batches.length === 1) {
-                                                        handleBatchChange(0, 'stock', Math.max(0, parseInt(val, 10) || 0));
+                                                        handleBatchChange(0, 'stock', clean === '' ? 0 : Math.max(0, parseInt(clean, 10) || 0));
                                                     }
                                                 }}
                                                 readOnly={batches.length > 1}
@@ -1331,8 +1333,10 @@ export default function ProductsPage() {
                                     <input
                                         type="number"
                                         min="1"
-                                        value={minStock}
-                                        onChange={(e) => setMinStock(e.target.value)}
+                                        value={minStock === '0' || minStock === '' ? '' : minStock}
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={(e) => setMinStock(e.target.value.replace(/^0+(?=\d)/, ''))}
+                                        placeholder="3"
                                         className="w-full h-[38px] px-3 rounded bg-surface-container-low text-on-surface font-mono text-sm focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary border border-surface-container"
                                     />
                                     <span className="text-[11px] text-secondary">Avisa quiebre en Dashboard</span>
@@ -1462,8 +1466,13 @@ export default function ProductsPage() {
                                                         <input
                                                             type="number"
                                                             min="0"
-                                                            value={batch.stock}
-                                                            onChange={(e) => handleBatchChange(index, 'stock', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                            value={batch.stock === 0 || (batch.stock as any) === '' ? '' : batch.stock}
+                                                            onFocus={(e) => e.target.select()}
+                                                            onChange={(e) => {
+                                                                const clean = e.target.value.replace(/^0+(?=\d)/, '');
+                                                                handleBatchChange(index, 'stock', clean === '' ? 0 : Math.max(0, parseInt(clean, 10) || 0));
+                                                            }}
+                                                            placeholder="0"
                                                             className="w-full h-[34px] px-2.5 pr-8 rounded bg-surface-container-low font-mono text-xs text-on-surface font-bold focus:outline-none focus:ring-2 focus:ring-primary border border-surface-container"
                                                         />
                                                         <span className="absolute right-2 text-[10px] text-secondary select-none font-mono">uds</span>
@@ -1598,7 +1607,9 @@ export default function ProductsPage() {
                                     type="number"
                                     min="1"
                                     value={quickStockAdd}
-                                    onChange={(e) => setQuickStockAdd(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => setQuickStockAdd(e.target.value.replace(/^0+(?=\d)/, ''))}
+                                    placeholder="1"
                                     className="w-full bg-surface-container-low font-mono text-lg font-bold text-on-surface px-3 py-2 rounded-lg border border-surface-container focus:ring-2 focus:ring-primary focus:outline-none"
                                     autoFocus
                                 />

@@ -1438,7 +1438,9 @@ export default function DashboardPage() {
                                     type="number"
                                     min="1"
                                     value={restockQty}
-                                    onChange={(e) => setRestockQty(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => setRestockQty(e.target.value.replace(/^0+(?=\d)/, ''))}
+                                    placeholder="10"
                                     className="w-full bg-surface-container-low font-mono text-lg font-bold text-on-surface px-3 py-1.5 rounded-lg border border-surface-container focus:ring-2 focus:ring-primary focus:outline-none"
                                     autoFocus
                                 />
@@ -1540,7 +1542,9 @@ export default function DashboardPage() {
                                         min="1"
                                         max={writeOffItem.stock}
                                         value={writeOffQty}
-                                        onChange={(e) => setWriteOffQty(e.target.value)}
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={(e) => setWriteOffQty(e.target.value.replace(/^0+(?=\d)/, ''))}
+                                        placeholder="1"
                                         className="w-full bg-surface-container-low font-mono text-lg font-bold text-red-600 px-3 py-1.5 rounded-lg border border-surface-container focus:ring-2 focus:ring-red-500 focus:outline-none"
                                         autoFocus
                                     />

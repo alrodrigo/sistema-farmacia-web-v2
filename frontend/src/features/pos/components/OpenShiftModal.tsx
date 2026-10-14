@@ -80,7 +80,8 @@ export default function OpenShiftModal({ isOpen, onClose, onShiftOpened }: OpenS
                                 step="0.50"
                                 min="0"
                                 value={openingBs}
-                                onChange={(e) => setOpeningBs(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => setOpeningBs(e.target.value.replace(/^0+(?=\d)/, ''))}
                                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container-low text-on-surface font-mono text-lg font-bold border border-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
                                 placeholder="0.00"
                                 required
