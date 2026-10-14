@@ -1,0 +1,154 @@
+@import 'tailwindcss';
+
+@theme {
+    /* Colores - Paleta PharmaCore */
+    --color-surface-bright: #ffffff;
+    --color-outline-variant: #c4c7d6;
+    --color-on-surface: #1b1b1f;
+    --color-on-surface-variant: #44474e;
+    --color-background: #f8f9ff;
+    --color-surface: #f8f9ff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #eff4ff;
+    --color-surface-container: #e5eeff;
+    --color-surface-container-high: #dce9ff;
+    --color-inverse-surface: #213145;
+    --color-inverse-on-surface: #eaf1ff;
+    --color-primary: #006948;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #00855d;
+    --color-secondary: #565e74;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #dae2fd;
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-outline: #6d7a72;
+    --color-primary-fixed: #85f8c4;
+    --color-primary-fixed-dim: #68dba9;
+    --color-on-primary-fixed-variant: #005137;
+    --color-secondary-fixed-dim: #bec6e0;
+    --color-surface-dim: #cbdbf5;
+    --color-surface-variant: #d3e4fe;
+    --color-surface-tint: #006c4a;
+    --color-surface-bright: #f8f9ff;
+    --color-tertiary: #006947;
+    --color-tertiary-container: #00855b;
+
+    /* Fuentes */
+    --font-sans: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Tipografía custom */
+    --font-headline-sm: var(--font-sans);
+    --font-label-caps: var(--font-sans);
+    --font-body-sm: var(--font-sans);
+    --font-data-mono-md: var(--font-mono);
+
+    /* Espaciado custom */
+    --spacing-space-xs: 0.25rem;
+    --spacing-space-sm: 0.5rem;
+    --spacing-space-md: 0.75rem;
+    --spacing-space-lg: 1rem;
+    --spacing-space-xl: 1.5rem;
+    --spacing-margin: 1.5rem;
+    --spacing-gutter: 1rem;
+}
+
+/* Base styles */
+* {
+    font-family: var(--font-sans);
+}
+
+.font-headline-sm {
+    font-family: var(--font-headline-sm);
+    font-size: 1rem;
+    /* 16px */
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.font-label-caps {
+    font-family: var(--font-label-caps);
+    font-size: 0.75rem;
+    /* 12px */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.font-body-sm {
+    font-family: var(--font-body-sm);
+    font-size: 0.875rem;
+    /* 14px */
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.font-data-mono-md {
+    font-family: var(--font-data-mono-md);
+    font-size: 0.875rem;
+    /* 14px */
+    font-weight: 500;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+
+/* src/index.css */
+
+@media print {
+    @page {
+        margin: 0;
+        /* Quita los márgenes por defecto del navegador */
+        size: 80mm auto;
+        /* Tamaño estándar de tiquetera (puede ser 58mm) */
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: white;
+    }
+
+    /* Oculta todo por defecto al imprimir */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Solo muestra el contenedor del ticket o del cierre de caja y sus hijos */
+    #ticket-receipt,
+    #ticket-receipt *,
+    #cash-close-receipt,
+    #cash-close-receipt * {
+        visibility: visible;
+    }
+
+    /* Posiciona el ticket o comprobante en la esquina superior izquierda del papel */
+    #ticket-receipt,
+    #cash-close-receipt {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        margin: 0;
+        padding: 4mm;
+        background: white !important;
+        color: black !important;
+        z-index: 999999;
+    }
+}
