@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useBrandingStore, applyThemeVariables } from '@/stores/brandingStore';
+import { useStoreSettings } from '@/features/settings/hooks/useStoreSettings';
 import { toast } from '@/stores/toastStore';
 
 export default function Login() {
     const { systemTitle, systemSubtitle, logoType, logoIcon, logoImage, themeColor } = useBrandingStore();
+    const { data: storeSettings } = useStoreSettings();
+    const effectiveStoreName = (systemTitle && systemTitle !== 'PharmaCore' ? systemTitle : '') || storeSettings?.business_name || systemTitle || 'PharmaCore';
     const navigate = useNavigate();
     const setUser = useAuthStore((state) => state.setUser);
 
@@ -214,7 +217,7 @@ export default function Login() {
                             </div>
 
                             <h2 className="text-2xl font-black text-white tracking-tight uppercase leading-tight">
-                                {systemTitle || 'PharmaCore'}
+                                {effectiveStoreName}
                             </h2>
                             <div className="flex items-center gap-1.5 mt-1">
                                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>

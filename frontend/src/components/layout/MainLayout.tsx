@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useBrandingStore, applyThemeVariables } from '@/stores/brandingStore';
+import { useStoreSettings } from '@/features/settings/hooks/useStoreSettings';
 import { supabase } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
@@ -20,6 +21,7 @@ const ROUTE_TITLES: Record<string, { title: string; subtitle: string; icon: stri
 export default function MainLayout() {
     const { user, role, clearUser } = useAuthStore();
     const { systemTitle, systemSubtitle, logoType, logoIcon, logoImage, themeColor } = useBrandingStore();
+    const { data: storeSettings } = useStoreSettings();
     const navigate = useNavigate();
     const location = useLocation();
     const isOnline = useOnlineStatus();
@@ -28,6 +30,9 @@ export default function MainLayout() {
     useEffect(() => {
         applyThemeVariables(themeColor);
     }, [themeColor]);
+
+    // Nombre efectivo de la farmacia: primero el configurado en Supabase, luego el branding personalizado, luego PharmaCore
+    const effectiveStoreName = (systemTitle && systemTitle !== 'PharmaCore' ? systemTitle : '') || storeSettings?.business_name || systemTitle || 'PharmaCore';
 
     // Permisos dinámicos vía RBAC
     const canViewDashboard = useHasPermission('dashboard:view');
@@ -40,15 +45,15 @@ export default function MainLayout() {
     const canViewSettings = useHasPermission('settings:view') || (role || '').toLowerCase() === 'admin';
 
     const currentRoute = ROUTE_TITLES[location.pathname] || {
-        title: systemTitle || 'PharmaCore ERP',
+        title: effectiveStoreName,
         subtitle: 'Sistema de Gestión Farmacéutica',
         icon: 'local_pharmacy',
     };
 
     // Sincronizar título de la pestaña del navegador
     useEffect(() => {
-        document.title = `${systemTitle || 'PharmaCore'} - ${currentRoute.title}`;
-    }, [systemTitle, currentRoute.title]);
+        document.title = `${effectiveStoreName} - ${currentRoute.title}`;
+    }, [effectiveStoreName, currentRoute.title]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -90,7 +95,7 @@ export default function MainLayout() {
                         </div>
                         <div className="flex flex-col min-w-0">
                             <span className="text-[15px] font-black text-white tracking-tight truncate leading-tight uppercase">
-                                {systemTitle || 'PharmaCore'}
+                                {effectiveStoreName}
                             </span>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 
 export type ThemeColorKey = 'emerald' | 'ocean' | 'indigo' | 'teal' | 'purple' | 'amber';
 
@@ -115,6 +117,55 @@ interface BrandingState {
     setBranding: (branding: Partial<Omit<BrandingState, 'setSystemTitle' | 'setSystemSubtitle' | 'setLogoType' | 'setLogoIcon' | 'setLogoImage' | 'setThemeColor' | 'setBranding'>>) => void;
 }
 
+// Adaptador robusto para IndexedDB (soporta imágenes y logos sin error de cuota)
+const idbStorage: StateStorage = {
+    getItem: async (name: string): Promise<string | null> => {
+        try {
+            const val = await get(name);
+            if (val) return val;
+            // Fallback a localStorage si antes existía allí
+            if (typeof window !== 'undefined') {
+                return window.localStorage.getItem(name);
+            }
+            return null;
+        } catch {
+            return typeof window !== 'undefined' ? window.localStorage.getItem(name) : null;
+        }
+    },
+    setItem: async (name: string, value: string): Promise<void> => {
+        try {
+            await set(name, value);
+        } catch (e) {
+            console.warn('Error guardando branding en IndexedDB:', e);
+        }
+        // Dual-write ligero en localStorage (sin el logo pesado si fallara)
+        if (typeof window !== 'undefined') {
+            try {
+                window.localStorage.setItem(name, value);
+            } catch {
+                // Si la imagen excede la cuota de localStorage, guardamos versión ligera
+                try {
+                    const parsed = JSON.parse(value);
+                    if (parsed?.state?.logoImage) {
+                        parsed.state.logoImage = null; // Guardar tema y títulos en localStorage
+                        window.localStorage.setItem(name, JSON.stringify(parsed));
+                    }
+                } catch {
+                    // Ignorar fallback
+                }
+            }
+        }
+    },
+    removeItem: async (name: string): Promise<void> => {
+        try {
+            await del(name);
+        } catch {}
+        if (typeof window !== 'undefined') {
+            window.localStorage.removeItem(name);
+        }
+    },
+};
+
 export const useBrandingStore = create<BrandingState>()(
     persist(
         (set) => ({
@@ -142,6 +193,7 @@ export const useBrandingStore = create<BrandingState>()(
         }),
         {
             name: 'pharmacore_branding_store',
+            storage: createJSONStorage(() => idbStorage),
             onRehydrateStorage: () => (state) => {
                 if (state?.themeColor) {
                     applyThemeVariables(state.themeColor);

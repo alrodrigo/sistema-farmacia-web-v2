@@ -50,19 +50,29 @@ export default function SettingsPage() {
             setAddress(settings.address || '');
             setPhone(settings.phone || '');
             setTicketFooter(settings.ticket_footer || '');
+            // Si el título del sistema es el genérico por defecto, sincronizar con el nombre real de la farmacia
+            if (!branding.systemTitle || branding.systemTitle === 'PharmaCore') {
+                if (settings.business_name) {
+                    setSystemTitle(settings.business_name);
+                }
+            }
         }
-    }, [settings]);
+    }, [settings, branding.systemTitle]);
 
     // Sincronizar estado local de branding con el store
     useEffect(() => {
-        setSystemTitle(branding.systemTitle);
+        if (branding.systemTitle && branding.systemTitle !== 'PharmaCore') {
+            setSystemTitle(branding.systemTitle);
+        } else if (settings?.business_name) {
+            setSystemTitle(settings.business_name);
+        }
         setSystemSubtitle(branding.systemSubtitle);
         setLogoType(branding.logoType);
         setLogoIcon(branding.logoIcon);
         setLogoImage(branding.logoImage);
         setThemeColor(branding.themeColor);
         setLogoTab(branding.logoType);
-    }, [branding.systemTitle, branding.systemSubtitle, branding.logoType, branding.logoIcon, branding.logoImage, branding.themeColor]);
+    }, [branding.systemTitle, branding.systemSubtitle, branding.logoType, branding.logoIcon, branding.logoImage, branding.themeColor, settings?.business_name]);
 
     // Comprobar si hay cambios pendientes (en base de datos o en branding)
     const isDirty =
@@ -87,7 +97,7 @@ export default function SettingsPage() {
             setPhone(settings.phone || '');
             setTicketFooter(settings.ticket_footer || '');
         }
-        setSystemTitle(branding.systemTitle);
+        setSystemTitle(branding.systemTitle || settings?.business_name || 'PharmaCore');
         setSystemSubtitle(branding.systemSubtitle);
         setLogoType(branding.logoType);
         setLogoIcon(branding.logoIcon);
@@ -98,23 +108,57 @@ export default function SettingsPage() {
         setSaveSuccess(false);
     };
 
-    // Subir imagen para el logo
+    // Subir imagen para el logo con auto-optimización en Canvas (para persistencia garantizada en IndexedDB)
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 2 * 1024 * 1024) {
-            toast.warning('La imagen seleccionada supera los 2 MB. Elige una imagen más ligera.', 'Archivo muy pesado');
+        if (file.size > 5 * 1024 * 1024) {
+            toast.warning('La imagen seleccionada supera los 5 MB. Elige una imagen más ligera.', 'Archivo muy pesado');
             return;
         }
 
         const reader = new FileReader();
         reader.onload = () => {
-            const result = reader.result as string;
-            setLogoImage(result);
-            setLogoType('image');
-            setLogoTab('image');
-            toast.success('Logotipo cargado en vista previa');
+            const rawData = reader.result as string;
+            const img = new Image();
+            img.onload = () => {
+                // Redimensionar suavemente a un tamaño óptimo para pantallas y tickets (máx 360px)
+                const maxDim = 360;
+                let w = img.width;
+                let h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h * maxDim) / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w * maxDim) / h);
+                        h = maxDim;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const optimizedDataUrl = canvas.toDataURL('image/png', 0.92);
+                    setLogoImage(optimizedDataUrl);
+                    setLogoType('image');
+                    setLogoTab('image');
+                    toast.success('Logotipo corporativo optimizado y cargado', 'Logo Listo');
+                } else {
+                    setLogoImage(rawData);
+                    setLogoType('image');
+                    setLogoTab('image');
+                }
+            };
+            img.onerror = () => {
+                setLogoImage(rawData);
+                setLogoType('image');
+                setLogoTab('image');
+            };
+            img.src = rawData;
         };
         reader.readAsDataURL(file);
     };
@@ -141,17 +185,20 @@ export default function SettingsPage() {
         e.preventDefault();
         if (!canEdit || !settings) return;
 
-        if (!businessName.trim()) {
-            toast.warning('El nombre comercial o razón social de la farmacia es obligatorio.', 'Campo requerido');
+        const finalBusinessName = businessName.trim() || systemTitle.trim();
+        if (!finalBusinessName) {
+            toast.warning('El nombre de la farmacia es obligatorio.', 'Campo requerido');
             return;
         }
 
+        const finalSystemTitle = systemTitle.trim() || finalBusinessName;
+
         try {
-            // 1. Guardar en Supabase
+            // 1. Guardar en Supabase (Persistencia permanente en Nube)
             await updateMutation.mutateAsync({
                 id: settings.id,
                 updates: {
-                    business_name: businessName.trim(),
+                    business_name: finalBusinessName,
                     nit: nit.trim() || null,
                     address: address.trim() || null,
                     phone: phone.trim() || null,
@@ -159,9 +206,9 @@ export default function SettingsPage() {
                 },
             });
 
-            // 2. Guardar en Store de Branding
+            // 2. Guardar en Store de Branding (Persistencia local en IndexedDB y localStorage)
             branding.setBranding({
-                systemTitle: systemTitle.trim() || 'PharmaCore',
+                systemTitle: finalSystemTitle,
                 systemSubtitle: systemSubtitle.trim() || 'ERP Clinical',
                 logoType,
                 logoIcon,
@@ -170,7 +217,7 @@ export default function SettingsPage() {
             });
 
             setSaveSuccess(true);
-            toast.success('Parámetros de la farmacia e identidad institucional guardados exitosamente', 'Configuración Guardada');
+            toast.success(`Configuración de "${finalBusinessName}" guardada en la base de datos y memoria permanente`, 'Guardado Exitoso');
             setTimeout(() => setSaveSuccess(false), 4500);
         } catch (err: any) {
             toast.error(err?.message || 'Error al guardar los cambios en Supabase', 'Error de Configuración');
