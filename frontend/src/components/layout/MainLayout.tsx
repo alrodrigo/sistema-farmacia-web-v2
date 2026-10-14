@@ -1,11 +1,13 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useBrandingStore, applyThemeVariables } from '@/stores/brandingStore';
 import { useStoreSettings } from '@/features/settings/hooks/useStoreSettings';
 import { supabase } from '@/lib/supabase';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { PageLoader } from '@/components/common/PageLoader';
 
 const ROUTE_TITLES: Record<string, { title: string; subtitle: string; icon: string }> = {
     '/dashboard': { title: 'Dashboard General', subtitle: 'Panel de control y rendimiento financiero', icon: 'grid_view' },
@@ -26,6 +28,7 @@ export default function MainLayout() {
     const location = useLocation();
     const isOnline = useOnlineStatus();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { canInstall, promptInstall } = usePwaInstall();
 
     // Cerrar menú móvil automáticamente al navegar
     useEffect(() => {
@@ -292,11 +295,25 @@ export default function MainLayout() {
                                 {isOnline ? 'Online' : 'Offline'}
                             </span>
                         </div>
+
+                        {canInstall && (
+                            <button
+                                type="button"
+                                onClick={promptInstall}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 animate-pulse hover:animate-none"
+                                title="Instalar PharmaCore como aplicación nativa"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">install_desktop</span>
+                                <span className="hidden sm:inline">Instalar App</span>
+                            </button>
+                        )}
                     </div>
                 </header>
 
                 <main className="w-full pt-16 print:pt-0 bg-background min-h-screen">
-                    <Outlet />
+                    <Suspense fallback={<PageLoader />}>
+                        <Outlet />
+                    </Suspense>
                 </main>
             </div>
         </div>

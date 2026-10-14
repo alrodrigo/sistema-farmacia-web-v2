@@ -14,7 +14,7 @@
       ]
     },
     {
-      "source": "/(index.html|version.json)",
+      "source": "/(index.html|version.json|sw.js|manifest.json)",
       "headers": [
         {
           "key": "Cache-Control",

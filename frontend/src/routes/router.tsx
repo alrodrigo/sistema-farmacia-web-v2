@@ -1,18 +1,22 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
-import Login from '../features/auth/components/Login';
-import PosPage from '@/features/pos/components/PosPage';
 import { useAuthStore } from '@/stores/authStore';
-import SuppliersPage from '@/features/suppliers/components/SuppliersPage';
-import CategoriesPage from '@/features/categories/components/CategoriesPage';
-import ProductsPage from '@/features/products/components/ProductsPage';
-import DashboardPage from '@/features/dashboard/components/DashboardPage';
-import UsersPage from '@/features/users/components/UsersPage';
-import ReportsPage from '@/features/reports/components/ReportsPage';
-import SettingsPage from '@/features/settings/components/SettingsPage';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
 import { useAllRolePermissions } from '@/features/users/hooks/useUsers';
 import { RouterErrorBoundary } from '@/components/common/GlobalErrorBoundary';
+import { PageLoader } from '@/components/common/PageLoader';
+
+// Code Splitting por Rutas: Carga bajo demanda mediante React.lazy()
+const Login = lazy(() => import('../features/auth/components/Login'));
+const DashboardPage = lazy(() => import('@/features/dashboard/components/DashboardPage'));
+const PosPage = lazy(() => import('@/features/pos/components/PosPage'));
+const ProductsPage = lazy(() => import('@/features/products/components/ProductsPage'));
+const CategoriesPage = lazy(() => import('@/features/categories/components/CategoriesPage'));
+const SuppliersPage = lazy(() => import('@/features/suppliers/components/SuppliersPage'));
+const ReportsPage = lazy(() => import('@/features/reports/components/ReportsPage'));
+const UsersPage = lazy(() => import('@/features/users/components/UsersPage'));
+const SettingsPage = lazy(() => import('@/features/settings/components/SettingsPage'));
 
 // Componente para la ruta raíz ("/") que redirige inteligentemente al primer módulo autorizado
 function IndexRedirect() {
@@ -103,7 +107,11 @@ function ProtectedRoute({ children, requiredPermission, allowedRoles }: Protecte
 export const router = createBrowserRouter([
     {
         path: '/login',
-        element: <Login />,
+        element: (
+            <Suspense fallback={<PageLoader title="Iniciando acceso..." />}>
+                <Login />
+            </Suspense>
+        ),
         errorElement: <RouterErrorBoundary />,
     },
     {
