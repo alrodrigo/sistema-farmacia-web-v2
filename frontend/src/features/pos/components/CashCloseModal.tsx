@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { getCashierDailyClose, type CashierCloseData } from '../services/cashCloseApi';
 import { getActiveCashShift, closeCashShift, type CashShift } from '../services/cashShiftsApi';
 import CashCloseReceipt, { type ReconciliationData } from './CashCloseReceipt';
+import { toast } from '@/stores/toastStore';
 
 interface CashCloseModalProps {
     isOpen: boolean;
@@ -40,7 +41,7 @@ export default function CashCloseModal({ isOpen, onClose }: CashCloseModalProps)
             })
             .catch((err) => {
                 console.error('Error cargando cierre de turno:', err);
-                alert('No se pudo cargar la información del turno');
+                toast.error('No se pudo cargar la información del turno', 'Error de Turno');
             })
             .finally(() => {
                 setIsLoading(false);
@@ -72,10 +73,11 @@ export default function CashCloseModal({ isOpen, onClose }: CashCloseModalProps)
             if (activeShift) {
                 await closeCashShift(activeShift.id, countedCents, expectedCents);
             }
+            toast.success('Turno de caja cerrado correctamente. Mostrando acta de arqueo.', 'Cierre Exitoso');
             setIsPrinting(true);
         } catch (err: any) {
             console.error('Error al registrar cierre de turno:', err);
-            alert(`Error al registrar el cierre: ${err.message}`);
+            toast.error(err.message || 'Error al registrar el cierre', 'Error de Cierre');
         } finally {
             setIsSubmittingClose(false);
         }

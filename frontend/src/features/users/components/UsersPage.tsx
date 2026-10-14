@@ -3,6 +3,8 @@ import { useUsers, useRoles, useUserMutations } from '../hooks/useUsers';
 import { useAuthStore } from '@/stores/authStore';
 import { useHasPermission } from '../hooks/usePermissions';
 import { PermissionMatrix, RoleEditor } from './PermissionMatrix';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 
 export default function UsersPage() {
     const { user: currentUser, setUser } = useAuthStore();
@@ -81,12 +83,13 @@ export default function UsersPage() {
             {
                 onSuccess: () => {
                     setIsModalOpen(false);
+                    toast.success('Perfil de usuario actualizado con éxito', 'Usuario Modificado');
                     if (currentUser && editingId === currentUser.id) {
                         const selectedRole = roles.find((r: any) => r.id === editRoleId);
                         setUser(currentUser, selectedRole?.name ?? null);
                     }
                 },
-                onError: (err: any) => alert(`Error al actualizar: ${err.message}`),
+                onError: (err: any) => toast.error(err.message, 'Error al actualizar usuario'),
             }
         );
     };
@@ -105,7 +108,7 @@ export default function UsersPage() {
         e.preventDefault();
         if (!canCreateUser) return;
         if (!newRoleId) {
-            alert('Por favor selecciona un rol para el usuario.');
+            toast.warning('Por favor selecciona un rol para el usuario.', 'Rol Requerido');
             return;
         }
 
@@ -119,15 +122,39 @@ export default function UsersPage() {
             {
                 onSuccess: () => {
                     setIsCreateModalOpen(false);
+                    toast.success(`Cuenta para ${newName} creada exitosamente`, 'Usuario Registrado');
                 },
-                onError: (err: any) => alert(`Error al crear usuario: ${err.message}`),
+                onError: (err: any) => toast.error(err.message, 'Error al crear usuario'),
             }
         );
     };
 
-    const handleToggleStatus = (userId: string, currentStatus: boolean) => {
+    const handleToggleStatus = async (userId: string, currentStatus: boolean, userName?: string) => {
         if (!canToggleStatus) return;
-        toggleStatusMut.mutate({ userId, isActive: !currentStatus });
+        if (currentStatus) {
+            const confirmed = await confirmDialog({
+                title: '¿Suspender Acceso de Usuario?',
+                message: `El usuario "${userName || 'seleccionado'}" no podrá iniciar sesión en el POS ni en ningún módulo hasta que sea reactivado. ¿Deseas suspenderlo?`,
+                confirmText: 'Sí, suspender',
+                cancelText: 'Cancelar',
+                type: 'warning',
+                icon: 'person_off',
+            });
+            if (!confirmed) return;
+        }
+
+        toggleStatusMut.mutate(
+            { userId, isActive: !currentStatus },
+            {
+                onSuccess: () => {
+                    toast.success(
+                        currentStatus ? 'Acceso del colaborador suspendido' : 'Acceso restaurado con éxito',
+                        'Estado de Seguridad'
+                    );
+                },
+                onError: (err: any) => toast.error(err.message, 'Error al cambiar estado'),
+            }
+        );
     };
 
     const getRoleBadgeStyle = (roleName?: string) => {
@@ -424,7 +451,7 @@ export default function UsersPage() {
                                                                 type="checkbox"
                                                                 checked={user.is_active}
                                                                 disabled={toggleStatusMut.isPending}
-                                                                onChange={() => handleToggleStatus(user.id, user.is_active)}
+                                                                onChange={() => handleToggleStatus(user.id, user.is_active, user.full_name)}
                                                                 className="sr-only peer"
                                                             />
                                                             <div className="w-9 h-5 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRoles, usePermissions, useRolePermissions, useRoleMutations } from '../../hooks/useUsers';
 import { PERMISSIONS, PERMISSION_CATEGORIES } from '../../constants/permissions';
+import { toast } from '@/stores/toastStore';
 
 const CATEGORY_ICONS: Record<string, string> = {
     'Dashboard': 'grid_view',
@@ -89,7 +90,7 @@ export default function RoleEditor({ roleId, onClose, onSuccess }: RoleEditorPro
         e.preventDefault();
         const trimmedName = name.trim().toLowerCase();
         if (!trimmedName) {
-            alert('El nombre del rol es obligatorio');
+            toast.warning('El nombre del rol es obligatorio', 'Campo requerido');
             return;
         }
 
@@ -110,10 +111,14 @@ export default function RoleEditor({ roleId, onClose, onSuccess }: RoleEditorPro
                 });
             }
 
+            toast.success(
+                `Rol "${trimmedName}" y sus permisos guardados correctamente`,
+                'Seguridad RBAC'
+            );
             onSuccess?.();
             onClose();
         } catch (err: any) {
-            alert(`Error al guardar rol: ${err.message}`);
+            toast.error(err.message, 'Error al guardar rol');
         }
     };
 

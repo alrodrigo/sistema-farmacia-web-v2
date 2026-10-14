@@ -8,6 +8,7 @@ import CashCloseModal from '@/features/pos/components/CashCloseModal';
 import KardexModal from '@/features/products/components/KardexModal';
 import { addBatchToProduct, writeOffBatch } from '../services/dashboardApi';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
+import { toast } from '@/stores/toastStore';
 
 export default function DashboardPage() {
     const navigate = useNavigate();
@@ -99,12 +100,13 @@ export default function DashboardPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['dashboard-metrics-v2'] });
             qc.invalidateQueries({ queryKey: ['products-catalog'] });
+            toast.success(`Se ingresaron +${restockQty} uds al lote ${restockLotNumber}`, 'Lote Registrado');
             setRestockProduct(null);
             setRestockLotNumber('');
             setRestockExpDate('');
             setRestockQty('10');
         },
-        onError: (err: any) => alert(`Error al registrar lote: ${err.message}`),
+        onError: (err: any) => toast.error(err.message, 'Error al registrar lote'),
     });
 
     // Mutación para dar de baja lote vencido (FEFO)
@@ -113,24 +115,25 @@ export default function DashboardPage() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['dashboard-metrics-v2'] });
             qc.invalidateQueries({ queryKey: ['products-catalog'] });
+            toast.success('Baja de lote completada. Stock restado de farmacia.', 'Merma Sanitaria');
             setWriteOffItem(null);
         },
-        onError: (err: any) => alert(`Error al retirar lote: ${err.message}`),
+        onError: (err: any) => toast.error(err.message, 'Error al retirar lote'),
     });
 
     const handleConfirmRestock = () => {
         if (!restockProduct) return;
         const addNum = parseInt(restockQty, 10);
         if (isNaN(addNum) || addNum <= 0) {
-            alert('Ingrese una cantidad válida mayor a cero');
+            toast.warning('Ingrese una cantidad válida mayor a cero');
             return;
         }
         if (!restockLotNumber.trim()) {
-            alert('Por favor ingrese o genere un número de lote');
+            toast.warning('Por favor ingrese o genere un número de lote');
             return;
         }
         if (!restockExpDate) {
-            alert('Por favor seleccione la fecha de caducidad del lote');
+            toast.warning('Por favor seleccione la fecha de caducidad del lote');
             return;
         }
         restockMut.mutate({
@@ -145,11 +148,11 @@ export default function DashboardPage() {
         if (!writeOffItem) return;
         const outNum = parseInt(writeOffQty, 10);
         if (isNaN(outNum) || outNum <= 0) {
-            alert('Ingrese una cantidad válida mayor a cero');
+            toast.warning('Ingrese una cantidad válida mayor a cero');
             return;
         }
         if (outNum > writeOffItem.stock) {
-            alert(`No puede retirar más de las ${writeOffItem.stock} unidades disponibles en este lote.`);
+            toast.warning(`No puede retirar más de las ${writeOffItem.stock} unidades disponibles en este lote.`);
             return;
         }
         writeOffMut.mutate({

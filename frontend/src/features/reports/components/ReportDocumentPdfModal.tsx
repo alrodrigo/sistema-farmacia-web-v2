@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatBs, formatDate } from '@/lib/utils';
 import type { DateRange, TopProduct, ProfitMargin } from '../services/reportsApi';
+import { toast } from '@/stores/toastStore';
 
 export type ReportType = 'sales_list' | 'cash_audit' | 'top_products' | 'margins';
 
@@ -387,7 +388,7 @@ export default function ReportDocumentPdfModal({
     const handlePrintPdf = () => {
         const printWindow = window.open('', '_blank', 'width=1100,height=900');
         if (!printWindow) {
-            alert('Por favor permite ventanas emergentes (pop-ups) para generar el PDF.');
+            toast.warning('Por favor permite ventanas emergentes (pop-ups) en tu navegador para generar el PDF.', 'Ventana Emergente Bloqueada');
             return;
         }
 

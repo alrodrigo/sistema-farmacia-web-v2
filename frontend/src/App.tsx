@@ -6,6 +6,7 @@ import { router } from './routes/router';
 import { registerOnlineListener, flushPendingSales } from './features/pos/services/sales';
 import { GlobalErrorBoundaryClass } from './components/common/GlobalErrorBoundary';
 import ToastContainer from './components/common/ToastContainer';
+import ConfirmModal from './components/common/ConfirmModal';
 
 export default function App() {
     const { setUser } = useAuthStore();
@@ -81,6 +82,7 @@ export default function App() {
         <GlobalErrorBoundaryClass>
             <RouterProvider router={router} />
             <ToastContainer />
+            <ConfirmModal />
         </GlobalErrorBoundaryClass>
     );
 }

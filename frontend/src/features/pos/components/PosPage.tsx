@@ -8,6 +8,8 @@ import TicketReceipt from './TicketReceipt';
 import CashCloseModal from './CashCloseModal';
 import OpenShiftModal from './OpenShiftModal';
 import SalesHistoryModal from './SalesHistoryModal';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 
 export default function PosPage() {
   const { user } = useAuthStore();
@@ -53,16 +55,22 @@ export default function PosPage() {
     saleSuccess, handleNewSale, handleAfterPrint,
   } = usePos();
 
-  const handleClearCartConfirm = () => {
+  const handleClearCartConfirm = async () => {
     if (cart.length === 0) return;
     const totalItems = cart.reduce((acc, i) => acc + i.quantity, 0);
-    const confirmClear = window.confirm(
-      `¿Deseas vaciar los ${totalItems} artículo(s) del ticket actual?`
-    );
+    const confirmClear = await confirmDialog({
+      title: '¿Vaciar Ticket de Venta?',
+      message: `¿Estás seguro de quitar los ${totalItems} artículo(s) seleccionados del ticket actual?`,
+      confirmText: 'Sí, vaciar ticket',
+      cancelText: 'Continuar venta',
+      type: 'warning',
+      icon: 'remove_shopping_cart',
+    });
     if (confirmClear) {
       clearCart();
       clearDiscount();
       setReceivedAmountBs('');
+      toast.info('Ticket de venta vaciado');
     }
   };
 
@@ -543,7 +551,10 @@ export default function PosPage() {
                       {/* Botón Eliminar */}
                       <button
                         type="button"
-                        onClick={() => removeItem(item.product_id)}
+                        onClick={() => {
+                          removeItem(item.product_id);
+                          toast.info(`"${item.name}" quitado del ticket`, 'Ticket Actualizado');
+                        }}
                         className="w-6 h-6 flex items-center justify-center text-outline hover:text-error hover:bg-error-container rounded transition-colors cursor-pointer"
                         title="Eliminar medicamento"
                       >
@@ -592,7 +603,10 @@ export default function PosPage() {
                             </span>
                             <button
                               type="button"
-                              onClick={clearDiscount}
+                              onClick={() => {
+                                clearDiscount();
+                                toast.info('Descuento removido del ticket');
+                              }}
                               className="text-secondary hover:text-error p-0.5 rounded transition-colors cursor-pointer"
                               title="Eliminar descuento"
                             >

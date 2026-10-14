@@ -7,6 +7,8 @@ import { useHasPermission } from "@/features/users/hooks/usePermissions";
 import { exportToCsv } from "@/lib/exportUtils";
 import type { BatchInput } from "../services/productsApi";
 import KardexModal from "./KardexModal";
+import { toast } from "@/stores/toastStore";
+import { confirmDialog } from "@/stores/confirmModalStore";
 
 // Helper para detectar productos vencidos o próximos a vencer (30 días por defecto)
 function isProductExpiring(p: any, daysAhead = 30): boolean {
@@ -112,6 +114,7 @@ export default function ProductsPage() {
 
     const handleRemoveBatch = (index: number) => {
         setBatches(prev => prev.filter((_, i) => i !== index));
+        toast.info('Lote retirado del formulario');
     };
 
     const handleBatchChange = (index: number, field: keyof BatchInput, value: any) => {
@@ -335,7 +338,7 @@ export default function ProductsPage() {
         e.preventDefault();
         if (editingProduct ? !canEdit : !canCreate) return;
         if (!priceBs || !costBs) {
-            alert('El precio y el costo son obligatorios');
+            toast.warning('El precio de venta y el costo son obligatorios', 'Campos incompletos');
             return;
         }
 
@@ -371,21 +374,37 @@ export default function ProductsPage() {
 
         if (editingProduct) {
             updateMut.mutate({ id: editingProduct.id, ...payload, lot_number: lotNumber.trim() }, {
-                onSuccess: () => setIsFormModalOpen(false),
-                onError: (err: any) => alert(`Error al actualizar: ${err.message}`)
+                onSuccess: () => {
+                    setIsFormModalOpen(false);
+                    toast.success(`Ficha técnica de "${name}" actualizada correctamente`, 'Medicamento Actualizado');
+                },
+                onError: (err: any) => toast.error(err.message, 'Error al actualizar')
             });
         } else {
             createMut.mutate(payload, {
-                onSuccess: () => setIsFormModalOpen(false),
-                onError: (err: any) => alert(`Error al crear: ${err.message}`)
+                onSuccess: () => {
+                    setIsFormModalOpen(false);
+                    toast.success(`"${name}" añadido al catálogo con stock inicial de ${finalStock} uds`, 'Medicamento Creado');
+                },
+                onError: (err: any) => toast.error(err.message, 'Error al crear medicamento')
             });
         }
     };
 
-    const handleDeleteProduct = (prod: any) => {
+    const handleDeleteProduct = async (prod: any) => {
         if (!canDelete) return;
-        if (confirm(`¿Eliminar definitivamente "${prod.name}" del catálogo?`)) {
-            deleteMut.mutate(prod.id);
+        const confirmed = await confirmDialog({
+            title: '¿Eliminar Medicamento?',
+            message: `Esta acción dará de baja definitivamente "${prod.name}" del catálogo de la farmacia. ¿Deseas continuar?`,
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar',
+            type: 'danger',
+        });
+        if (confirmed) {
+            deleteMut.mutate(prod.id, {
+                onSuccess: () => toast.success(`"${prod.name}" fue eliminado del catálogo`),
+                onError: (err: any) => toast.error(err.message, 'No se pudo eliminar')
+            });
         }
     };
 
@@ -394,7 +413,7 @@ export default function ProductsPage() {
         if (!canAdjustStock || !quickStockModalProd) return;
         const addNum = parseInt(quickStockAdd, 10);
         if (isNaN(addNum) || addNum <= 0) {
-            alert('Ingrese una cantidad válida mayor a cero');
+            toast.warning('Ingrese una cantidad válida mayor a cero');
             return;
         }
         const newStock = quickStockModalProd.stock + addNum;
@@ -403,8 +422,9 @@ export default function ProductsPage() {
             {
                 onSuccess: () => {
                     setQuickStockModalProd(null);
+                    toast.success(`Se añadieron +${addNum} uds al stock de "${quickStockModalProd.name}"`, 'Stock Actualizado');
                 },
-                onError: (err: any) => alert(`Error al ajustar stock: ${err.message}`)
+                onError: (err: any) => toast.error(err.message, 'Error al ajustar stock')
             }
         );
     };

@@ -5,6 +5,8 @@ import { useProducts } from '@/features/products/hooks/useProducts';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
 import { exportToCsv } from '@/lib/exportUtils';
 import type { CategoryPayload } from '../services/categoriesApi';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 
 // Catálogo de iconos farmacéuticos seleccionables para el Administrador
 const AVAILABLE_ICONS = [
@@ -92,31 +94,47 @@ export default function CategoriesPage() {
                 onSuccess: () => {
                     closeForm();
                     refetch();
+                    toast.success(`Categoría "${name}" actualizada correctamente`, 'Categoría Guardada');
                 },
-                onError: (err: any) => alert(`Error al actualizar categoría: ${err.message}`)
+                onError: (err: any) => toast.error(err.message, 'Error al actualizar categoría')
             });
         } else {
             createMut.mutate(payload, {
                 onSuccess: () => {
                     closeForm();
                     refetch();
+                    toast.success(`Línea farmacológica "${name}" creada con éxito`, 'Categoría Creada');
                 },
-                onError: (err: any) => alert(`Error al crear categoría: ${err.message}`)
+                onError: (err: any) => toast.error(err.message, 'Error al crear categoría')
             });
         }
     };
 
-    const handleDelete = (id: string, name: string) => {
+    const handleDelete = async (id: string, name: string) => {
         const linkedProducts = products.filter((p: any) => p.category_id === id);
         if (linkedProducts.length > 0) {
-            alert(`No se puede eliminar "${name}" porque contiene ${linkedProducts.length} medicamentos asociados en inventario. Reasigne esos productos antes de eliminar.`);
+            toast.warning(
+                `No se puede eliminar "${name}" porque contiene ${linkedProducts.length} medicamentos asociados en inventario. Reasigne esos productos antes de eliminarla.`,
+                'Categoría con dependencias'
+            );
             return;
         }
 
-        if (window.confirm(`¿Estás seguro de eliminar la categoría farmacológica "${name}"?`)) {
+        const confirmed = await confirmDialog({
+            title: '¿Eliminar Categoría Farmacológica?',
+            message: `¿Estás seguro de eliminar la categoría "${name}"? Esta acción removerá la clasificación del catálogo.`,
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar',
+            type: 'danger',
+        });
+
+        if (confirmed) {
             deleteMut.mutate(id, {
-                onSuccess: () => refetch(),
-                onError: (err: any) => alert(`No se puede eliminar: ${err.message}`)
+                onSuccess: () => {
+                    refetch();
+                    toast.success(`Categoría "${name}" eliminada`);
+                },
+                onError: (err: any) => toast.error(err.message, 'No se pudo eliminar')
             });
         }
     };

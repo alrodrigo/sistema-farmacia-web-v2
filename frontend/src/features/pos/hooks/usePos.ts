@@ -6,6 +6,8 @@ import { checkout, registerOnlineListener, flushPendingSales } from '../services
 import { useAuthStore } from '@/stores/authStore';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import type { CartItem } from '@/stores/cartStore';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 
 export function usePos() {
     const qc = useQueryClient();
@@ -154,30 +156,38 @@ export function usePos() {
         return (changeAmountCents / 100).toFixed(2);
     }, [changeAmountCents]);
 
-    const handleAddToCart = (product: any) => {
+    const handleAddToCart = async (product: any) => {
         // 1. Bloqueo caducidad
         if (product.expiration_date) {
             const exp = new Date(product.expiration_date);
             const today = new Date(); today.setHours(0, 0, 0, 0);
             if (exp < today) {
-                alert(`🛑 BLOQUEO: ${product.name} venció el ${exp.toLocaleDateString()}.`);
+                toast.error(`"${product.name}" caducó el ${exp.toLocaleDateString()}. Venta bloqueada por seguridad sanitaria.`, 'Medicamento Vencido');
                 return;
             }
             // Alerta de vencimiento próximo (≤ 30 días)
             if (exp <= new Date(today.getTime() + 30 * 864e5)) {
-                if (!confirm(`⚠️ FEFO: "${product.name}" vence próximamente (${exp.toLocaleDateString()}). ¿Confirmar dispensación?`)) return;
+                const proceed = await confirmDialog({
+                    title: '⚠️ Aviso FEFO: Vencimiento Próximo',
+                    message: `"${product.name}" vence próximamente (${exp.toLocaleDateString()}). ¿Deseas confirmar la dispensación al cliente?`,
+                    confirmText: 'Sí, dispensar',
+                    cancelText: 'Cancelar',
+                    type: 'warning',
+                    icon: 'event_busy',
+                });
+                if (!proceed) return;
             }
         }
         // 2. Validación de Stock Físico
         const currentQty = cart.find(i => i.product_id === product.id)?.quantity || 0;
         if (currentQty >= product.stock) {
-            alert(`⚠️ Stock insuficiente para "${product.name}" (${product.stock} disponibles)`);
+            toast.warning(`Stock insuficiente para "${product.name}" (solo ${product.stock} disponibles en farmacia)`, 'Límite de Stock');
             return;
         }
 
         // 3. Alerta de Prescripción Médica (Rx)
         if (product.requires_prescription) {
-            console.log(`ℹ️ [Rx] Dispensación de medicamento controlado/con receta: ${product.name}`);
+            toast.info(`Medicamento controlado: Requiere verificar receta médica (${product.name})`, 'Prescripción Médica (Rx)');
         }
 
         addItem({ product_id: product.id, name: product.name, price_cents: product.price_cents, quantity: 1 });
@@ -189,7 +199,10 @@ export function usePos() {
         const prod = products.find(p => p.id === productId);
         const newQty = item.quantity + delta;
         if (newQty <= 0) { removeItem(productId); return; }
-        if (prod && newQty > prod.stock) { alert(`⚠️ Límite stock: ${prod.stock}`); return; }
+        if (prod && newQty > prod.stock) {
+            toast.warning(`Solo hay ${prod.stock} unidades disponibles en inventario de "${prod.name}"`, 'Límite de Stock');
+            return;
+        }
         updateQuantity(productId, newQty);
     };
 
@@ -198,7 +211,10 @@ export function usePos() {
 
         // Validar pago en efectivo si ingresó un monto menor al total definitivo con descuento
         if (paymentMethod === 'cash' && receivedAmountBs && receivedAmountCents < finalTotalCents) {
-            alert(`El monto recibido (Bs ${receivedAmountBs}) es menor al total a pagar con descuento (Bs ${(finalTotalCents / 100).toFixed(2)})`);
+            toast.warning(
+                `El monto recibido (Bs ${receivedAmountBs}) es menor al total a pagar con descuento (Bs ${(finalTotalCents / 100).toFixed(2)})`,
+                'Efectivo Insuficiente'
+            );
             return;
         }
 
@@ -231,6 +247,8 @@ export function usePos() {
                 setReceivedAmountBs('');
                 clearDiscount();
 
+                toast.success('Venta finalizada y registrada con éxito', 'Ticket Generado');
+
                 await qc.invalidateQueries({ queryKey: ['products-catalog'] });
                 qc.invalidateQueries({ queryKey: ['sales-summary'] });
                 qc.invalidateQueries({ queryKey: ['consolidated-cash-close'] });
@@ -252,7 +270,7 @@ export function usePos() {
                     change_amount_cents: finalChangeCents,
                 });
             } else {
-                alert(res.error);
+                toast.error(res.error || 'No se pudo procesar la venta', 'Error en Transacción');
             }
         } finally {
             setIsProcessing(false);

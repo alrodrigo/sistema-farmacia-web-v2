@@ -9,6 +9,7 @@ import {
     applyThemeVariables,
     type ThemeColorKey,
 } from '@/stores/brandingStore';
+import { toast } from '@/stores/toastStore';
 
 export default function SettingsPage() {
     const { role } = useAuthStore();
@@ -103,7 +104,7 @@ export default function SettingsPage() {
         if (!file) return;
 
         if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen seleccionada supera el límite recomendado de 2 MB. Por favor elige una imagen más ligera.');
+            toast.warning('La imagen seleccionada supera los 2 MB. Elige una imagen más ligera.', 'Archivo muy pesado');
             return;
         }
 
@@ -113,6 +114,7 @@ export default function SettingsPage() {
             setLogoImage(result);
             setLogoType('image');
             setLogoTab('image');
+            toast.success('Logotipo cargado en vista previa');
         };
         reader.readAsDataURL(file);
     };
@@ -122,6 +124,7 @@ export default function SettingsPage() {
         setLogoType('icon');
         setLogoTab('icon');
         if (fileInputRef.current) fileInputRef.current.value = '';
+        toast.info('Logo retirado. Se usará el isotipo vectorial.');
     };
 
     const handleSelectTheme = (paletteKey: ThemeColorKey) => {
@@ -139,7 +142,7 @@ export default function SettingsPage() {
         if (!canEdit || !settings) return;
 
         if (!businessName.trim()) {
-            alert('El nombre comercial o razón social de la farmacia es obligatorio.');
+            toast.warning('El nombre comercial o razón social de la farmacia es obligatorio.', 'Campo requerido');
             return;
         }
 
@@ -167,9 +170,10 @@ export default function SettingsPage() {
             });
 
             setSaveSuccess(true);
+            toast.success('Parámetros de la farmacia e identidad institucional guardados exitosamente', 'Configuración Guardada');
             setTimeout(() => setSaveSuccess(false), 4500);
         } catch (err: any) {
-            alert(`Error al guardar los cambios: ${err?.message || 'Error desconocido'}`);
+            toast.error(err?.message || 'Error al guardar los cambios en Supabase', 'Error de Configuración');
         }
     };
 

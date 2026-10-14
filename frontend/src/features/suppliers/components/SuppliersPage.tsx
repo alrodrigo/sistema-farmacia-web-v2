@@ -5,6 +5,8 @@ import { useProducts } from '@/features/products/hooks/useProducts';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
 import { exportToCsv } from '@/lib/exportUtils';
 import type { SupplierPayload } from '../services/suppliersApi';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 
 // Helper para extraer iniciales de la razón social de forma elegante
 function getInitials(name: string): string {
@@ -89,32 +91,48 @@ export default function SuppliersPage() {
                 onSuccess: () => {
                     closeForm();
                     refetch();
+                    toast.success(`Datos de "${name}" actualizados con éxito`, 'Proveedor Actualizado');
                 },
-                onError: (err: any) => alert(`Error al actualizar proveedor: ${err.message}`)
+                onError: (err: any) => toast.error(err.message, 'Error al actualizar proveedor')
             });
         } else {
             createMut.mutate(payload, {
                 onSuccess: () => {
                     closeForm();
                     refetch();
+                    toast.success(`Proveedor "${name}" registrado en el sistema`, 'Proveedor Creado');
                 },
-                onError: (err: any) => alert(`Error al registrar proveedor: ${err.message}`)
+                onError: (err: any) => toast.error(err.message, 'Error al registrar proveedor')
             });
         }
     };
 
-    const handleDelete = (id: string, name: string) => {
+    const handleDelete = async (id: string, name: string) => {
         if (!canDelete) return;
         const linkedProducts = products.filter((p: any) => p.supplier_id === id);
         if (linkedProducts.length > 0) {
-            alert(`No se puede eliminar "${name}" porque tiene ${linkedProducts.length} medicamentos asociados en inventario. Reasigne los productos primero.`);
+            toast.warning(
+                `No se puede eliminar "${name}" porque tiene ${linkedProducts.length} medicamentos asociados en inventario. Reasigne los productos primero.`,
+                'Proveedor con medicamentos vinculados'
+            );
             return;
         }
 
-        if (window.confirm(`¿Estás seguro de eliminar el proveedor "${name}"?`)) {
+        const confirmed = await confirmDialog({
+            title: '¿Eliminar Proveedor / Distribuidor?',
+            message: `¿Estás seguro de eliminar "${name}" del directorio? Esta acción no se puede deshacer.`,
+            confirmText: 'Sí, eliminar',
+            cancelText: 'Cancelar',
+            type: 'danger',
+        });
+
+        if (confirmed) {
             deleteMut.mutate(id, {
-                onSuccess: () => refetch(),
-                onError: (err: any) => alert(`No se puede eliminar: ${err.message}`)
+                onSuccess: () => {
+                    refetch();
+                    toast.success(`Proveedor "${name}" eliminado`);
+                },
+                onError: (err: any) => toast.error(err.message, 'No se puede eliminar')
             });
         }
     };

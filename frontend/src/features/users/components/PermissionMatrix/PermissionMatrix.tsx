@@ -1,6 +1,7 @@
 import { useState, useMemo, Fragment } from 'react';
 import { useRoles, usePermissions, useAllRolePermissions, useRoleMutations } from '../../hooks/useUsers';
 import { PERMISSION_CATEGORIES, PERMISSIONS } from '../../constants/permissions';
+import { toast } from '@/stores/toastStore';
 
 interface PermissionMatrixProps {
     onClose?: () => void;
@@ -98,8 +99,9 @@ export default function PermissionMatrix({ onClose, onEditRole }: PermissionMatr
                 roleId,
                 permissionIds: nextPerms,
             });
+            toast.success('Permiso actualizado en la matriz RBAC');
         } catch (err: any) {
-            alert(`Error al actualizar permiso: ${err.message}`);
+            toast.error(err.message, 'Error al actualizar permiso');
         }
     };
 

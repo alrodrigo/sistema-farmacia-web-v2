@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
 import { cancelSale } from '@/features/pos/services/sales';
 import TicketReceipt from '@/features/pos/components/TicketReceipt';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 import ReportDocumentPdfModal, { type ReportType } from './ReportDocumentPdfModal';
 import {
     useDateRange,
@@ -82,11 +84,14 @@ export default function ReportsPage() {
 
     const handleAdminCancelSale = async (sale: any) => {
         if (!user || !canVoidSale) return;
-        const confirmed = confirm(
-            `⚠️ ¿Estás seguro de anular la venta #${sale.id.slice(0, 8)} de Bs ${(sale.total_cents / 100).toFixed(
-                2
-            )}?\n\nEl stock de los productos vendidos será devuelto automáticamente al inventario.`
-        );
+        const confirmed = await confirmDialog({
+            title: '¿Anular Venta Administrativamente?',
+            message: `¿Estás seguro de anular la venta #${sale.id.slice(0, 8)} por un total de Bs ${(sale.total_cents / 100).toFixed(2)}?\n\nEl stock de todos los medicamentos vendidos será restituido automáticamente al inventario.`,
+            confirmText: 'Sí, anular y devolver stock',
+            cancelText: 'Conservar venta',
+            type: 'danger',
+            icon: 'remove_shopping_cart',
+        });
         if (!confirmed) return;
 
         const reason =
@@ -97,7 +102,7 @@ export default function ReportsPage() {
         try {
             const res = await cancelSale(sale.id, user.id, reason);
             if (res.success) {
-                alert('✅ Venta anulada exitosamente. El stock de los medicamentos ha sido restaurado en el inventario.');
+                toast.success('Venta anulada. El stock fue devuelto automáticamente al inventario.', 'Venta Anulada');
                 await qc.invalidateQueries({ queryKey: ['consolidated-cash-close'] });
                 qc.invalidateQueries({ queryKey: ['sales-summary'] });
                 qc.invalidateQueries({ queryKey: ['daily-sales'] });
@@ -107,7 +112,7 @@ export default function ReportsPage() {
                 qc.invalidateQueries({ queryKey: ['stock-alerts'] });
                 qc.invalidateQueries({ queryKey: ['recent-sales'] });
             } else {
-                alert(`Error al anular la venta: ${res.error}`);
+                toast.error(res.error || 'No se pudo anular la venta', 'Error de Anulación');
             }
         } finally {
             setCancellingSaleId(null);
@@ -367,7 +372,7 @@ export default function ReportsPage() {
     // Exportadores a Excel / CSV
     const handleExportSalesList = () => {
         if (consolidatedSales.length === 0) {
-            alert('No hay ventas registradas en el período seleccionado para exportar.');
+            toast.info('No hay ventas registradas en el período seleccionado para exportar.');
             return;
         }
 
@@ -406,11 +411,12 @@ export default function ReportsPage() {
             headers,
             rows,
         });
+        toast.success('Archivo CSV de ventas descargado');
     };
 
     const handleExportCashiersAudit = () => {
         if (cashCloseSummary.cashierAuditList.length === 0) {
-            alert('No hay cierres de caja en el período seleccionado.');
+            toast.info('No hay cierres de caja en el período seleccionado.');
             return;
         }
 
@@ -442,11 +448,12 @@ export default function ReportsPage() {
             headers,
             rows,
         });
+        toast.success('Auditoría de cajeros descargada');
     };
 
     const handleExportTopProducts = () => {
         if (!topProducts.data || topProducts.data.length === 0) {
-            alert('No hay productos vendidos en el período para exportar.');
+            toast.info('No hay productos vendidos en el período para exportar.');
             return;
         }
 
@@ -466,11 +473,12 @@ export default function ReportsPage() {
             headers,
             rows,
         });
+        toast.success('Ranking de productos descargado');
     };
 
     const handleExportMargins = () => {
         if (!margins.data || margins.data.length === 0) {
-            alert('No hay datos de rentabilidad para exportar.');
+            toast.info('No hay datos de rentabilidad para exportar.');
             return;
         }
 

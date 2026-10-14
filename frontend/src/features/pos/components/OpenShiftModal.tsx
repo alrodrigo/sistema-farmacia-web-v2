@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { openCashShift, type CashShift } from '../services/cashShiftsApi';
+import { toast } from '@/stores/toastStore';
 
 interface OpenShiftModalProps {
     isOpen: boolean;
@@ -22,19 +23,19 @@ export default function OpenShiftModal({ isOpen, onClose, onShiftOpened }: OpenS
 
         const amountCents = Math.round((parseFloat(openingBs) || 0) * 100);
         if (amountCents < 0) {
-            alert('El monto inicial no puede ser negativo.');
+            toast.warning('El monto inicial no puede ser negativo.');
             return;
         }
 
         setIsSubmitting(true);
         try {
             const shift = await openCashShift(user.id, amountCents, notes);
-            alert(`✅ Caja abierta con éxito con un fondo de Bs ${parseFloat(openingBs).toFixed(2)}`);
+            toast.success(`Caja abierta con éxito con un fondo de Bs ${parseFloat(openingBs).toFixed(2)}`, 'Turno Iniciado');
             onShiftOpened(shift);
             onClose();
         } catch (err: any) {
             console.error('Error abriendo caja:', err);
-            alert(`Error al abrir caja: ${err.message}`);
+            toast.error(err.message || 'Error al abrir caja', 'Error de Apertura');
         } finally {
             setIsSubmitting(false);
         }

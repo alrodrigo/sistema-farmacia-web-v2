@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { getRecentSales, cancelSale, type RecentSaleItem } from '../services/sales';
+import { toast } from '@/stores/toastStore';
+import { confirmDialog } from '@/stores/confirmModalStore';
 
 
 interface SalesHistoryModalProps {
@@ -46,11 +48,14 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
 
     const handleCancelSale = async (sale: RecentSaleItem) => {
         if (!user) return;
-        const confirmCancel = confirm(
-            `⚠️ ¿Estás seguro de anular la venta #${sale.id.slice(0, 8)} de Bs ${(sale.total_cents / 100).toFixed(
-                2
-            )}?\n\nEl stock de los productos vendidos será devuelto automáticamente al inventario.`
-        );
+        const confirmCancel = await confirmDialog({
+            title: '¿Anular Venta y Restaurar Stock?',
+            message: `¿Estás seguro de anular la venta #${sale.id.slice(0, 8)} por un total de Bs ${(sale.total_cents / 100).toFixed(2)}?\n\nLos medicamentos vendidos se restituirán automáticamente al inventario.`,
+            confirmText: 'Sí, anular venta',
+            cancelText: 'Cancelar',
+            type: 'danger',
+            icon: 'remove_shopping_cart',
+        });
         if (!confirmCancel) return;
 
         const reason = prompt('Motivo de la anulación:', 'Devolución de cliente / Error en cobro') || 'Anulación solicitada';
@@ -59,7 +64,7 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
         try {
             const res = await cancelSale(sale.id, user.id, reason);
             if (res.success) {
-                alert('✅ Venta anulada exitosamente. El stock de los medicamentos ha sido restaurado.');
+                toast.success('Venta anulada exitosamente. El stock fue restaurado.', 'Venta Anulada');
                 // Recargar historial y refrescar catálogo de productos en tiempo real
                 await qc.invalidateQueries({ queryKey: ['products-catalog'] });
                 qc.invalidateQueries({ queryKey: ['sales-summary'] });
@@ -67,7 +72,7 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
                 qc.invalidateQueries({ queryKey: ['cashier-daily-close'] });
                 await loadSales();
             } else {
-                alert(`Error al anular la venta: ${res.error}`);
+                toast.error(res.error || 'No se pudo anular la venta', 'Error al Anular');
             }
         } finally {
             setCancellingId(null);

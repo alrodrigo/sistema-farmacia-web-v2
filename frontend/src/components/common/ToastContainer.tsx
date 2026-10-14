@@ -50,7 +50,7 @@ export default function ToastContainer() {
                     <div
                         key={t.id}
                         role="alert"
-                        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl backdrop-blur-xl border ${style.border} ${style.bg} transition-all duration-300 animate-in fade-in slide-in-from-bottom-3`}
+                        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl backdrop-blur-xl border ${style.border} ${style.bg} animate-toast transition-all duration-200`}
                     >
                         <span className={`material-symbols-outlined text-2xl shrink-0 ${style.iconColor}`}>
                             {TOAST_ICONS[t.type]}

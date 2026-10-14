@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/stores/toastStore';
 import {
     getUsers,
     getRoles,
@@ -112,7 +113,7 @@ export function useUserMutations() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['users'] });
         },
-        onError: (err: any) => alert(`Error al actualizar usuario: ${err.message}`),
+        onError: (err: any) => toast.error(err.message, 'Error al actualizar usuario'),
     });
 
     const toggleStatusMut = useMutation({
