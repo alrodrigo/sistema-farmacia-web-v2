@@ -12,6 +12,7 @@ import ReportsPage from '@/features/reports/components/ReportsPage';
 import SettingsPage from '@/features/settings/components/SettingsPage';
 import { useHasPermission } from '@/features/users/hooks/usePermissions';
 import { useAllRolePermissions } from '@/features/users/hooks/useUsers';
+import { RouterErrorBoundary } from '@/components/common/GlobalErrorBoundary';
 
 // Componente para la ruta raíz ("/") que redirige inteligentemente al primer módulo autorizado
 function IndexRedirect() {
@@ -100,7 +101,11 @@ function ProtectedRoute({ children, requiredPermission, allowedRoles }: Protecte
 }
 
 export const router = createBrowserRouter([
-    { path: '/login', element: <Login /> },
+    {
+        path: '/login',
+        element: <Login />,
+        errorElement: <RouterErrorBoundary />,
+    },
     {
         path: '/',
         element: (
@@ -108,6 +113,7 @@ export const router = createBrowserRouter([
                 <MainLayout />
             </ProtectedRoute>
         ),
+        errorElement: <RouterErrorBoundary />,
         children: [
             { index: true, element: <IndexRedirect /> },
             {

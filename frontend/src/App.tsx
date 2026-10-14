@@ -4,6 +4,8 @@ import { supabase } from './lib/supabase';
 import { useAuthStore } from './stores/authStore';
 import { router } from './routes/router';
 import { registerOnlineListener, flushPendingSales } from './features/pos/services/sales';
+import { GlobalErrorBoundaryClass } from './components/common/GlobalErrorBoundary';
+import ToastContainer from './components/common/ToastContainer';
 
 export default function App() {
     const { setUser } = useAuthStore();
@@ -65,8 +67,20 @@ export default function App() {
     }, [setUser]);
 
     if (isInitializing) {
-        return <div className="h-screen flex items-center justify-center bg-background text-on-surface">Inicializando PharmaCore...</div>;
+        return (
+            <div className="h-screen flex items-center justify-center bg-background text-on-surface">
+                <div className="flex flex-col items-center gap-3">
+                    <span className="material-symbols-outlined text-primary text-3xl animate-spin">progress_activity</span>
+                    <span className="text-sm text-secondary font-medium tracking-wide">Iniciando PharmaCore...</span>
+                </div>
+            </div>
+        );
     }
 
-    return <RouterProvider router={router} />;
+    return (
+        <GlobalErrorBoundaryClass>
+            <RouterProvider router={router} />
+            <ToastContainer />
+        </GlobalErrorBoundaryClass>
+    );
 }
