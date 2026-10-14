@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useBrandingStore, applyThemeVariables } from '@/stores/brandingStore';
 import { useStoreSettings } from '@/features/settings/hooks/useStoreSettings';
@@ -25,6 +25,12 @@ export default function MainLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const isOnline = useOnlineStatus();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Cerrar menú móvil automáticamente al navegar
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
 
     // Sincronizar tema de colores global
     useEffect(() => {
@@ -77,33 +83,56 @@ export default function MainLayout() {
 
     return (
         <div className="min-h-screen bg-background font-sans text-on-surface flex">
-            {/* Sidebar - oculto al imprimir */}
-            <aside className="print:hidden fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800/80 z-50 flex flex-col justify-between select-none shadow-xl">
+            {/* Backdrop oscuro para móvil / tablet cuando el menú está abierto */}
+            {isMobileMenuOpen && (
+                <div
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 animate-modal-backdrop"
+                    aria-hidden="true"
+                />
+            )}
+
+            {/* Sidebar - deslizante en móvil y tablet, fijo en desktop */}
+            <aside className={`print:hidden fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800/80 z-50 flex flex-col justify-between select-none shadow-2xl transition-transform duration-300 ease-in-out ${
+                isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}>
                 <div className="flex flex-col">
                     {/* Brand Header */}
-                    <div className="h-[74px] px-5 flex items-center gap-3.5 border-b border-white/[0.08] bg-white/[0.02]">
-                        <div className="w-11 h-11 rounded-2xl bg-white p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-lg shadow-black/20 ring-1 ring-white/20 border border-slate-100">
-                            {logoType === 'image' && logoImage ? (
-                                <img src={logoImage} alt="Logo de la farmacia" className="w-full h-full object-contain" />
-                            ) : (
-                                <div className="w-full h-full rounded-xl bg-primary flex items-center justify-center text-white">
-                                    <span className="material-symbols-outlined text-[24px]">
-                                        {logoIcon || 'local_pharmacy'}
+                    <div className="h-[74px] px-5 flex items-center justify-between border-b border-white/[0.08] bg-white/[0.02]">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-2xl bg-white p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-lg shadow-black/20 ring-1 ring-white/20 border border-slate-100">
+                                {logoType === 'image' && logoImage ? (
+                                    <img src={logoImage} alt="Logo de la farmacia" className="w-full h-full object-contain" />
+                                ) : (
+                                    <div className="w-full h-full rounded-xl bg-primary flex items-center justify-center text-white">
+                                        <span className="material-symbols-outlined text-[22px]">
+                                            {logoIcon || 'local_pharmacy'}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-black text-white tracking-tight truncate leading-tight uppercase">
+                                    {effectiveStoreName}
+                                </span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-fixed truncate">
+                                        {systemSubtitle || 'ERP Clinical'}
                                     </span>
                                 </div>
-                            )}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[15px] font-black text-white tracking-tight truncate leading-tight uppercase">
-                                {effectiveStoreName}
-                            </span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary-fixed truncate">
-                                    {systemSubtitle || 'ERP Clinical'}
-                                </span>
                             </div>
                         </div>
+
+                        {/* Botón cerrar Drawer en móvil */}
+                        <button
+                            type="button"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                            aria-label="Cerrar menú"
+                        >
+                            <span className="material-symbols-outlined text-xl">close</span>
+                        </button>
                     </div>
 
                     {/* SECCIÓN OPERACIONES */}
@@ -209,24 +238,34 @@ export default function MainLayout() {
                 </div>
             </aside>
 
-            {/* Header + Main content - header oculto al imprimir, padding ajustado */}
-            <div className="pl-64 print:pl-0 w-full flex flex-col min-h-screen">
-                <header className="print:hidden fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest z-40 px-6 flex items-center justify-between gap-4 border-b border-surface-container shadow-xs">
-                    {/* Título de la sección actual */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+            {/* Header + Main content - responsivo (pl-0 en móvil/tablet, pl-64 en desktop) */}
+            <div className="pl-0 lg:pl-64 print:pl-0 w-full flex flex-col min-h-screen">
+                <header className="print:hidden fixed top-0 left-0 lg:left-64 right-0 h-16 bg-surface-container-lowest z-40 px-3.5 sm:px-6 flex items-center justify-between gap-2.5 sm:gap-4 border-b border-surface-container shadow-xs">
+                    {/* Botón hamburguesa + Título de la sección actual */}
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        {/* Botón menú hamburguesa móvil/tablet */}
+                        <button
+                            type="button"
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="lg:hidden w-9 h-9 rounded-xl bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0 transition-colors"
+                            aria-label="Abrir menú de navegación"
+                        >
+                            <span className="material-symbols-outlined text-[22px]">menu</span>
+                        </button>
+
+                        <div className="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary shrink-0 hidden xs:flex">
                             <span className="material-symbols-outlined text-[20px]">{currentRoute.icon}</span>
                         </div>
-                        <div className="flex flex-col">
-                            <h2 className="text-sm font-bold text-on-surface leading-tight">{currentRoute.title}</h2>
-                            <span className="text-xs text-secondary hidden sm:inline leading-tight">{currentRoute.subtitle}</span>
+                        <div className="flex flex-col min-w-0">
+                            <h2 className="text-xs sm:text-sm font-bold text-on-surface leading-tight truncate">{currentRoute.title}</h2>
+                            <span className="text-[11px] sm:text-xs text-secondary hidden md:inline leading-tight truncate">{currentRoute.subtitle}</span>
                         </div>
                     </div>
 
                     {/* Estado del sistema, badge de farmacia y fecha */}
-                    <div className="flex items-center gap-3">
-                        {/* Chip discreto de la farmacia en el header */}
-                        <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-xl bg-surface-container-low border border-surface-container text-xs">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        {/* Chip de la farmacia en el header */}
+                        <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-xl bg-surface-container-low border border-surface-container text-xs">
                             <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-xs border border-slate-200">
                                 {logoType === 'image' && logoImage ? (
                                     <img src={logoImage} alt="Logo" className="w-full h-full object-contain" />
@@ -236,20 +275,20 @@ export default function MainLayout() {
                                     </span>
                                 )}
                             </div>
-                            <span className="font-bold text-on-surface max-w-[150px] truncate">{systemTitle || 'PharmaCore'}</span>
+                            <span className="font-bold text-on-surface max-w-[150px] truncate">{effectiveStoreName}</span>
                         </div>
 
-                        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-low text-secondary text-xs font-mono">
+                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-low text-secondary text-xs font-mono">
                             <span className="material-symbols-outlined text-[15px]">calendar_today</span>
                             <span className="capitalize">{new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low border border-surface-container">
+                        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-surface-container-low border border-surface-container">
                             <span className="relative flex h-2 w-2">
                                 {isOnline && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>}
                                 <span className={`relative inline-flex rounded-full h-2 w-2 ${isOnline ? 'bg-primary' : 'bg-error'}`}></span>
                             </span>
-                            <span className={`text-xs font-semibold uppercase ${isOnline ? 'text-on-surface-variant' : 'text-error'}`}>
+                            <span className={`text-[11px] sm:text-xs font-semibold uppercase ${isOnline ? 'text-on-surface-variant' : 'text-error'}`}>
                                 {isOnline ? 'Online' : 'Offline'}
                             </span>
                         </div>

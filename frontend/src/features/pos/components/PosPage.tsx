@@ -31,6 +31,7 @@ export default function PosPage() {
   const [reprintSaleId, setReprintSaleId] = useState<string | null>(null);
   const [isDiscountOpen, setIsDiscountOpen] = useState(false);
   const [isClientEditOpen, setIsClientEditOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'catalog' | 'ticket'>('catalog');
 
   useEffect(() => {
     if (!user) return;
@@ -124,11 +125,49 @@ export default function PosPage() {
   return (
     <>
       {/* LAYOUT POS - print:hidden oculta todo esto al imprimir */}
-      <div className="print:hidden flex flex-col lg:flex-row gap-5 p-5 h-[calc(100vh-64px)] overflow-hidden bg-background">
+      <div className="print:hidden flex flex-col lg:flex-row gap-3 sm:gap-5 p-2 sm:p-4 lg:p-5 h-[calc(100vh-64px)] overflow-hidden bg-background">
+        
+        {/* Selector de Pestañas Móvil / Tablet Pequeña (Catálogo / Ticket) */}
+        <div className="lg:hidden flex items-center bg-surface-container-low p-1 rounded-xl shrink-0 border border-surface-container shadow-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab('catalog')}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              mobileTab === 'catalog'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-secondary hover:text-on-surface'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[17px]">inventory_2</span>
+            <span>Catálogo ({products.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('ticket')}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              mobileTab === 'ticket'
+                ? 'bg-primary text-on-primary shadow-xs'
+                : 'text-secondary hover:text-on-surface'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[17px]">receipt_long</span>
+            <span>Ticket ({cart.reduce((a, b) => a + b.quantity, 0)})</span>
+            {cart.length > 0 && (
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                mobileTab === 'ticket' ? 'bg-primary-container text-white' : 'bg-primary/20 text-primary'
+              }`}>
+                Bs {totalBs}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* ==============================================================================
             COLUMNA IZQUIERDA: Catálogo de Dispensación (65%)
            ============================================================================== */}
-        <div className="w-full lg:w-[65%] flex flex-col gap-3.5 h-full overflow-hidden">
+        <div className={`w-full lg:w-[65%] flex-col gap-3.5 h-full overflow-hidden ${
+          mobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'
+        }`}>
           {/* 1. Barra Superior: Búsqueda con Escáner, Estado y Acciones Rápidas */}
           <div className="bg-surface-container-lowest p-3 rounded-xl shadow-xs border border-surface-container flex flex-col sm:flex-row items-center gap-2.5 shrink-0">
             <div className="relative flex-1 w-full">
@@ -409,12 +448,34 @@ export default function PosPage() {
               <span>Cobro Inmediato</span>
             </div>
           </div>
+
+          {/* Botón Flotante Móvil: Ver Ticket y Cobrar */}
+          {mobileTab === 'catalog' && cart.length > 0 && (
+            <div className="lg:hidden fixed bottom-3 left-3 right-3 z-30 animate-toast">
+              <button
+                type="button"
+                onClick={() => setMobileTab('ticket')}
+                className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-3 px-4 rounded-2xl shadow-2xl flex items-center justify-between font-bold text-xs active:scale-98 transition-all border border-white/20"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px]">shopping_cart</span>
+                  <span>{cart.reduce((a, b) => a + b.quantity, 0)} medicamento(s)</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-mono text-sm font-extrabold">
+                  <span>Bs {totalBs}</span>
+                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ==============================================================================
             COLUMNA DERECHA: Ticket de Dispensación Persistente (35%)
            ============================================================================== */}
-        <div className="w-full lg:w-[35%] flex flex-col gap-3 h-full overflow-hidden">
+        <div className={`w-full lg:w-[35%] flex-col gap-3 h-full overflow-hidden ${
+          mobileTab === 'ticket' ? 'flex' : 'hidden lg:flex'
+        }`}>
           <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container flex flex-col h-full overflow-hidden">
             {/* Cabecera del Ticket Clínico */}
             <div className="bg-inverse-surface p-3.5 text-inverse-on-surface flex items-center justify-between shrink-0">

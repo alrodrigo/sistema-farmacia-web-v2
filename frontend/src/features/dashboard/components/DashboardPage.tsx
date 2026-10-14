@@ -349,7 +349,7 @@ export default function DashboardPage() {
     const avgTicketBs = (avgTicketCents / 100).toFixed(2);
 
     return (
-        <div className="flex flex-col w-full gap-6 p-6 max-w-[1600px] mx-auto animate-fadeIn">
+        <div className="flex flex-col w-full gap-6 p-3 sm:p-6 max-w-[1600px] mx-auto animate-fadeIn">
             {/* 1. CABECERA & ACCESOS RÁPIDOS */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

@@ -255,7 +255,7 @@ export default function SuppliersPage() {
     }
 
     return (
-        <div className="flex flex-col w-full gap-6 p-6 max-w-[1700px] mx-auto">
+        <div className="flex flex-col w-full gap-6 p-3 sm:p-6 max-w-[1700px] mx-auto">
             {/* CABECERA & ACCIONES */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">

@@ -486,7 +486,7 @@ export default function ProductsPage() {
     }
 
     return (
-        <div className="flex flex-col w-full gap-6 p-6 max-w-[1600px] mx-auto">
+        <div className="flex flex-col w-full gap-6 p-3 sm:p-6 max-w-[1600px] mx-auto">
             {/* 1. TOP BANNER / KPI METRIC CARDS STRIP */}
             <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

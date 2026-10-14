@@ -194,7 +194,7 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto flex flex-col gap-6 font-sans">
+        <div className="p-3 sm:p-6 max-w-7xl mx-auto flex flex-col gap-6 font-sans">
             {/* 1. CABECERA & NAVEGACIÓN DE CONTEXTO */}
             <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5 text-secondary text-xs">

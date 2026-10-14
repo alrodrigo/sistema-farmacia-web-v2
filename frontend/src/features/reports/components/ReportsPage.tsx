@@ -553,7 +553,7 @@ export default function ReportsPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto flex flex-col gap-6 font-sans">
+        <div className="p-3 sm:p-6 max-w-7xl mx-auto flex flex-col gap-6 font-sans">
             {/* ==============================================================================
                 1. HEADER SECTION CON HIERARCHY PROFUNDA & ACTION TOOLBAR
                ============================================================================== */}

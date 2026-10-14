@@ -274,7 +274,7 @@ export default function CategoriesPage() {
     }
 
     return (
-        <div className="flex flex-col w-full gap-6 p-6 max-w-[1700px] mx-auto">
+        <div className="flex flex-col w-full gap-6 p-3 sm:p-6 max-w-[1700px] mx-auto">
             {/* CABECERA */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">
