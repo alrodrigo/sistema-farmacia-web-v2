@@ -7,12 +7,17 @@ import { registerOnlineListener, flushPendingSales } from './features/pos/servic
 import { GlobalErrorBoundaryClass } from './components/common/GlobalErrorBoundary';
 import ToastContainer from './components/common/ToastContainer';
 import ConfirmModal from './components/common/ConfirmModal';
+import VersionUpdateBanner from './components/common/VersionUpdateBanner';
+import { initVersionChecker } from './stores/versionStore';
 
 export default function App() {
     const { setUser } = useAuthStore();
     const [isInitializing, setIsInitializing] = useState(true);
 
     useEffect(() => {
+        // Inicializar detector autónomo de nuevas versiones y purga de caché
+        const cleanupVersionChecker = initVersionChecker();
+
         const loadUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             const user = session?.user ?? null;
@@ -64,7 +69,10 @@ export default function App() {
             await flushPendingSales();
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+            cleanupVersionChecker();
+        };
     }, [setUser]);
 
     if (isInitializing) {
@@ -83,6 +91,7 @@ export default function App() {
             <RouterProvider router={router} />
             <ToastContainer />
             <ConfirmModal />
+            <VersionUpdateBanner />
         </GlobalErrorBoundaryClass>
     );
 }
