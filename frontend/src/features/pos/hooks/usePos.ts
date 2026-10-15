@@ -157,19 +157,26 @@ export function usePos() {
     }, [changeAmountCents]);
 
     const handleAddToCart = async (product: any) => {
-        // 1. Bloqueo caducidad
+        // 1. Verificación de caducidad (Advertencia con opción de continuar)
         if (product.expiration_date) {
             const exp = new Date(product.expiration_date);
             const today = new Date(); today.setHours(0, 0, 0, 0);
+
             if (exp < today) {
-                toast.error(`"${product.name}" caducó el ${exp.toLocaleDateString()}. Venta bloqueada por seguridad sanitaria.`, 'Medicamento Vencido');
-                return;
-            }
-            // Alerta de vencimiento próximo (≤ 30 días)
-            if (exp <= new Date(today.getTime() + 30 * 864e5)) {
+                const proceed = await confirmDialog({
+                    title: '⚠️ Advertencia: Medicamento Vencido',
+                    message: `"${product.name}" caducó el ${exp.toLocaleDateString('es-ES')}.\n\nPor normativa sanitaria no se recomienda su venta regular. ¿Deseas autorizar la dispensación y agregarlo al pedido de todas formas?`,
+                    confirmText: 'Sí, autorizar y agregar',
+                    cancelText: 'No, cancelar',
+                    type: 'danger',
+                    icon: 'warning',
+                });
+                if (!proceed) return;
+            } else if (exp <= new Date(today.getTime() + 30 * 864e5)) {
+                // Alerta de vencimiento próximo (≤ 30 días)
                 const proceed = await confirmDialog({
                     title: '⚠️ Aviso FEFO: Vencimiento Próximo',
-                    message: `"${product.name}" vence próximamente (${exp.toLocaleDateString()}). ¿Deseas confirmar la dispensación al cliente?`,
+                    message: `"${product.name}" vence próximamente (${exp.toLocaleDateString('es-ES')}). ¿Deseas confirmar la dispensación al cliente?`,
                     confirmText: 'Sí, dispensar',
                     cancelText: 'Cancelar',
                     type: 'warning',

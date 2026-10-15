@@ -373,6 +373,25 @@ export default function PosPage() {
                               {prod.pharmaceutical_form}
                             </span>
                           )}
+                          {prod.expiration_date && (() => {
+                            const exp = new Date(prod.expiration_date);
+                            const today = new Date(); today.setHours(0, 0, 0, 0);
+                            if (exp < today) {
+                              return (
+                                <span className="px-1.5 py-0.2 rounded bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800 text-[9px] font-bold" title={`Caducó el ${exp.toLocaleDateString('es-ES')}`}>
+                                  ⚠️ Vencido
+                                </span>
+                              );
+                            }
+                            if (exp <= new Date(today.getTime() + 30 * 864e5)) {
+                              return (
+                                <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[9px] font-bold" title={`Vence el ${exp.toLocaleDateString('es-ES')}`}>
+                                  ⏳ Por vencer
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
 
                         {/* Título y Sustancia Activa */}
