@@ -3,8 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { getRecentSales, cancelSale, type RecentSaleItem } from '../services/sales';
 import { toast } from '@/stores/toastStore';
-import { confirmDialog } from '@/stores/confirmModalStore';
-
+import { CancelSaleModal } from './CancelSaleModal';
 
 interface SalesHistoryModalProps {
     isOpen: boolean;
@@ -20,6 +19,7 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
     const [filterMethod, setFilterMethod] = useState<'ALL' | 'cash' | 'card' | 'qr'>('ALL');
     const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const [saleToCancel, setSaleToCancel] = useState<RecentSaleItem | null>(null);
 
     const loadSales = async () => {
         setIsLoading(true);
@@ -46,25 +46,14 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
         return s.payment_method === filterMethod;
     });
 
-    const handleCancelSale = async (sale: RecentSaleItem) => {
-        if (!user) return;
-        const confirmCancel = await confirmDialog({
-            title: '¿Anular Venta y Restaurar Stock?',
-            message: `¿Estás seguro de anular la venta #${sale.id.slice(0, 8)} por un total de Bs ${(sale.total_cents / 100).toFixed(2)}?\n\nLos medicamentos vendidos se restituirán automáticamente al inventario.`,
-            confirmText: 'Sí, anular venta',
-            cancelText: 'Cancelar',
-            type: 'danger',
-            icon: 'remove_shopping_cart',
-        });
-        if (!confirmCancel) return;
-
-        const reason = prompt('Motivo de la anulación:', 'Devolución de cliente / Error en cobro') || 'Anulación solicitada';
-
-        setCancellingId(sale.id);
+    const handleConfirmCancel = async (reason: string) => {
+        if (!user || !saleToCancel) return;
+        setCancellingId(saleToCancel.id);
         try {
-            const res = await cancelSale(sale.id, user.id, reason);
+            const res = await cancelSale(saleToCancel.id, user.id, reason);
             if (res.success) {
                 toast.success('Venta anulada exitosamente. El stock fue restaurado.', 'Venta Anulada');
+                setSaleToCancel(null);
                 // Recargar historial y refrescar catálogo de productos en tiempo real
                 await qc.invalidateQueries({ queryKey: ['products-catalog'] });
                 qc.invalidateQueries({ queryKey: ['sales-summary'] });
@@ -250,8 +239,8 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
                                                 {!isCancelled && (
                                                     <button
                                                         disabled={cancellingId === s.id}
-                                                        onClick={() => handleCancelSale(s)}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error font-bold text-xs transition-colors"
+                                                        onClick={() => setSaleToCancel(s)}
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error font-bold text-xs transition-colors cursor-pointer"
                                                         title="Anular venta y reponer stock"
                                                     >
                                                         <span className="material-symbols-outlined text-[16px]">cancel</span>
@@ -303,12 +292,21 @@ export default function SalesHistoryModal({ isOpen, onClose, onReprint }: SalesH
                     <span>Mostrando las últimas {filteredSales.length} transacciones registradas</span>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-surface-container-lowest text-on-surface hover:bg-surface-container border border-surface-container transition-colors"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-surface-container-lowest text-on-surface hover:bg-surface-container border border-surface-container transition-colors cursor-pointer"
                     >
                         Cerrar Historial
                     </button>
                 </div>
             </div>
+
+            {/* Modal Profesional de Confirmación de Anulación */}
+            <CancelSaleModal
+                isOpen={!!saleToCancel}
+                sale={saleToCancel}
+                onClose={() => setSaleToCancel(null)}
+                onConfirm={handleConfirmCancel}
+                isCancelling={!!cancellingId}
+            />
         </div>
     );
 }
