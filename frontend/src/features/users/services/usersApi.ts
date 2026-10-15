@@ -92,26 +92,53 @@ export async function createUserWithProfile({
     roleId: string;
 }) {
     const { data: authData, error: authError } = await authSignupClient.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
+        options: {
+            data: {
+                full_name: fullName.trim(),
+            },
+        },
     });
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('No se pudo registrar la cuenta en Supabase Auth.');
+    if (authError) {
+        if (authError.message.toLowerCase().includes('rate limit')) {
+            throw new Error(
+                'Límite de correos de Supabase alcanzado. Para registrar empleados de inmediato sin límites de envío, desactiva la casilla "Confirm email" en Supabase Dashboard (Authentication → Providers → Email).'
+            );
+        }
+        throw authError;
+    }
 
+    if (!authData.user) {
+        throw new Error('No se pudo registrar la cuenta en Supabase Auth.');
+    }
+
+    // Detección de cuenta ya existente (Supabase devuelve identities vacías para evitar enumeración)
+    if (authData.user.identities && authData.user.identities.length === 0) {
+        throw new Error('Este correo electrónico ya se encuentra registrado para otro usuario.');
+    }
+
+    // Usar upsert para evitar colisión de clave duplicada con el trigger on_auth_user_created
     const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
-        .insert({
-            id: authData.user.id,
-            full_name: fullName,
-            role_id: roleId,
-            is_active: true,
-        })
-        .select()
+        .upsert(
+            {
+                id: authData.user.id,
+                full_name: fullName.trim(),
+                role_id: roleId,
+                is_active: true,
+            },
+            { onConflict: 'id' }
+        )
+        .select(`
+            *,
+            roles (id, name, description)
+        `)
         .single();
 
     if (profileError) {
-        throw new Error(`Cuenta creada, pero falló la asignación del perfil: ${profileError.message}`);
+        throw new Error(`Cuenta creada en Auth, pero falló la asignación del perfil: ${profileError.message}`);
     }
 
     return profileData;
