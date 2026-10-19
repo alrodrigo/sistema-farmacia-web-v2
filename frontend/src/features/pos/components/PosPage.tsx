@@ -415,6 +415,12 @@ export default function PosPage() {
                           <span className="font-mono text-base lg:text-lg text-on-surface font-extrabold">
                             Bs {(prod.price_cents / 100).toFixed(2)}
                           </span>
+                          {prod.box_price_cents && prod.box_price_cents > 0 ? (
+                            <span className="font-mono text-[10px] text-primary font-bold flex items-center gap-0.5 mt-0.5" title="Precio referencial por caja completa">
+                              <span className="material-symbols-outlined text-[12px]">inventory_2</span>
+                              Caja: Bs {(prod.box_price_cents / 100).toFixed(2)}
+                            </span>
+                          ) : null}
                         </div>
 
                         {canSell ? (

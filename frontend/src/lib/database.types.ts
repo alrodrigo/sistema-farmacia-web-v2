@@ -145,14 +145,14 @@ isOneToOne: false
                   ]
                 },"products": {
                   Row: {
-                    "active_substance": string | null,"category_id": string | null,"cost_cents": number,"created_at": string | null,"description": string | null,"expiration_date": string | null,"id": string,"is_priority": boolean | null,"min_stock": number | null,"name": string,"pharmaceutical_form": string | null,"price_cents": number,"requires_prescription": boolean | null,"search_vector": unknown,"sku": string | null,"stock": number,"supplier_id": string | null,"updated_at": string | null
+                    "active_substance": string | null,"box_price_cents": number | null,"category_id": string | null,"cost_cents": number,"created_at": string | null,"description": string | null,"expiration_date": string | null,"id": string,"is_priority": boolean | null,"min_stock": number | null,"name": string,"pharmaceutical_form": string | null,"price_cents": number,"requires_prescription": boolean | null,"search_vector": unknown,"sku": string | null,"stock": number,"supplier_id": string | null,"updated_at": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "active_substance"?: string | null,"category_id"?: string | null,"cost_cents"?: number,"created_at"?: string | null,"description"?: string | null,"expiration_date"?: string | null,"id"?: string,"is_priority"?: boolean | null,"min_stock"?: number | null,"name": string,"pharmaceutical_form"?: string | null,"price_cents": number,"requires_prescription"?: boolean | null,"search_vector"?: never,"sku"?: string | null,"stock"?: number,"supplier_id"?: string | null,"updated_at"?: string | null
+                    "active_substance"?: string | null,"box_price_cents"?: number | null,"category_id"?: string | null,"cost_cents"?: number,"created_at"?: string | null,"description"?: string | null,"expiration_date"?: string | null,"id"?: string,"is_priority"?: boolean | null,"min_stock"?: number | null,"name": string,"pharmaceutical_form"?: string | null,"price_cents": number,"requires_prescription"?: boolean | null,"search_vector"?: never,"sku"?: string | null,"stock"?: number,"supplier_id"?: string | null,"updated_at"?: string | null
                   }
                   Update: {
-                    "active_substance"?: string | null,"category_id"?: string | null,"cost_cents"?: number,"created_at"?: string | null,"description"?: string | null,"expiration_date"?: string | null,"id"?: string,"is_priority"?: boolean | null,"min_stock"?: number | null,"name"?: string,"pharmaceutical_form"?: string | null,"price_cents"?: number,"requires_prescription"?: boolean | null,"search_vector"?: never,"sku"?: string | null,"stock"?: number,"supplier_id"?: string | null,"updated_at"?: string | null
+                    "active_substance"?: string | null,"box_price_cents"?: number | null,"category_id"?: string | null,"cost_cents"?: number,"created_at"?: string | null,"description"?: string | null,"expiration_date"?: string | null,"id"?: string,"is_priority"?: boolean | null,"min_stock"?: number | null,"name"?: string,"pharmaceutical_form"?: string | null,"price_cents"?: number,"requires_prescription"?: boolean | null,"search_vector"?: never,"sku"?: string | null,"stock"?: number,"supplier_id"?: string | null,"updated_at"?: string | null
                   }
                   Relationships: [
                     {

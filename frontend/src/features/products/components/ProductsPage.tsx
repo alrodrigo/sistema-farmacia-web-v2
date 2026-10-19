@@ -86,9 +86,10 @@ export default function ProductsPage() {
     const [sku, setSku] = useState('');
     const [name, setName] = useState('');
     const [activeSubstance, setActiveSubstance] = useState('');
-    const [pharmaceuticalForm, setPharmaceuticalForm] = useState('Comprimido');
     const [description, setDescription] = useState('');
+    const [pharmaceuticalForm, setPharmaceuticalForm] = useState('Comprimido');
     const [priceBs, setPriceBs] = useState('');
+    const [boxPriceBs, setBoxPriceBs] = useState('');
     const [costBs, setCostBs] = useState('');
     const [stock, setStock] = useState('0');
     const [categoryId, setCategoryId] = useState('');
@@ -273,9 +274,7 @@ export default function ProductsPage() {
 
     const openCreateModal = () => {
         if (!canCreate) return;
-        setEditingProduct(null);
-        setSku(''); setName(''); setActiveSubstance(''); setPharmaceuticalForm('Comprimido');
-        setDescription(''); setPriceBs(''); setCostBs('');
+        setDescription(''); setPriceBs(''); setBoxPriceBs(''); setCostBs('');
         setStock(''); setCategoryId(''); setSupplierId(''); setExpirationDate(''); setLotNumber('');
         setBatches([{
             lot_number: '',
@@ -292,9 +291,9 @@ export default function ProductsPage() {
         setSku(prod.sku || '');
         setName(prod.name);
         setActiveSubstance(prod.active_substance || '');
-        setPharmaceuticalForm(prod.pharmaceutical_form || 'Comprimido');
         setDescription(prod.description || '');
         setPriceBs((prod.price_cents / 100).toFixed(2));
+        setBoxPriceBs(prod.box_price_cents && prod.box_price_cents > 0 ? (prod.box_price_cents / 100).toFixed(2) : '');
         setCostBs((prod.cost_cents / 100).toFixed(2));
         setStock(prod.stock.toString());
         setCategoryId(prod.category_id || '');
@@ -343,6 +342,7 @@ export default function ProductsPage() {
         }
 
         const price_cents = Math.round(parseFloat(priceBs) * 100);
+        const box_price_cents = boxPriceBs && parseFloat(boxPriceBs) > 0 ? Math.round(parseFloat(boxPriceBs) * 100) : 0;
         const cost_cents = Math.round(parseFloat(costBs) * 100);
 
         // Validar que los IDs realmente existan en los catálogos para evitar violaciones de clave foránea
@@ -360,6 +360,7 @@ export default function ProductsPage() {
             pharmaceutical_form: pharmaceuticalForm || null,
             description: description.trim() || null,
             price_cents,
+            box_price_cents,
             cost_cents,
             stock: finalStock,
             min_stock: parseInt(minStock, 10) || 3,
@@ -434,6 +435,7 @@ export default function ProductsPage() {
         const rows = filteredProducts.map(p => {
             const cost = (p.cost_cents / 100).toFixed(2);
             const price = (p.price_cents / 100).toFixed(2);
+            const boxPrice = p.box_price_cents && p.box_price_cents > 0 ? (p.box_price_cents / 100).toFixed(2) : '0.00';
             const margin = p.price_cents > 0
                 ? (((p.price_cents - p.cost_cents) / p.price_cents) * 100).toFixed(1) + '%'
                 : '0%';
@@ -446,6 +448,7 @@ export default function ProductsPage() {
                 p.min_stock ?? 3,
                 cost,
                 price,
+                boxPrice,
                 margin,
                 p.expiration_date || 'Sin fecha'
             ];
@@ -455,7 +458,7 @@ export default function ProductsPage() {
             filename: `Inventario_Farmacia_${new Date().toISOString().slice(0, 10)}.csv`,
             headers: [
                 'SKU', 'Medicamento / Descripción', 'Categoría', 'Proveedor',
-                'Stock Actual', 'Stock Mínimo', 'Costo Bs', 'Precio Venta Bs', 'Margen %', 'Vencimiento'
+                'Stock Actual', 'Stock Mínimo', 'Costo Bs', 'Precio Venta Unitario Bs', 'Precio Caja Bs', 'Margen %', 'Vencimiento'
             ],
             rows
         });
@@ -953,9 +956,16 @@ export default function ProductsPage() {
 
                                             {/* PVP Farmacia */}
                                             <td className="py-3.5 px-3 text-right">
-                                                <span className="font-mono text-sm font-bold text-on-surface">
-                                                    Bs {priceBsNum.toFixed(2)}
-                                                </span>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="font-mono text-sm font-bold text-on-surface">
+                                                        Bs {priceBsNum.toFixed(2)}
+                                                    </span>
+                                                    {prod.box_price_cents && prod.box_price_cents > 0 ? (
+                                                        <span className="font-mono text-[11px] text-primary font-medium flex items-center gap-0.5" title="Precio referencial por caja">
+                                                            Caja: Bs {(prod.box_price_cents / 100).toFixed(2)}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             </td>
 
                                             {/* Margen */}
@@ -1262,7 +1272,7 @@ export default function ProductsPage() {
                                         <span className="material-symbols-outlined text-[13px] text-primary">lock_clock</span> Base monetaria en centavos
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                     {/* Cost Price */}
                                     <div className="flex flex-col gap-1">
                                         <label className="text-xs font-bold text-on-surface">
@@ -1308,6 +1318,27 @@ export default function ProductsPage() {
                                                 ? `Margen: ${calculatedMargin.isPositive ? '+' : ''}Bs ${calculatedMargin.profit.toFixed(2)} (${calculatedMargin.pct}%)`
                                                 : 'Margen calculado: --'}
                                         </span>
+                                    </div>
+                                    {/* Box Price */}
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs font-bold text-on-surface flex items-center justify-between">
+                                            <span>Precio por Caja</span>
+                                            <span className="text-[10px] text-outline">Opcional</span>
+                                        </label>
+                                        <div className="relative flex items-center">
+                                            <span className="absolute left-2.5 font-mono text-xs text-secondary select-none">Bs</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={boxPriceBs}
+                                                onFocus={(e) => e.target.select()}
+                                                onChange={(e) => setBoxPriceBs(e.target.value.replace(/^0+(?=\d)/, ''))}
+                                                placeholder="0.00"
+                                                className="w-full h-[38px] pl-8 pr-2.5 rounded bg-surface-container-lowest text-on-surface font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary border border-surface-container"
+                                            />
+                                        </div>
+                                        <span className="text-[11px] text-secondary">Referencial para venta por caja</span>
                                     </div>
                                     {/* Initial Stock */}
                                     <div className="flex flex-col gap-1">

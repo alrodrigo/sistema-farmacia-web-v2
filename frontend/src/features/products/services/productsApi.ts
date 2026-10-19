@@ -37,6 +37,7 @@ function sanitizeProductPayload(data: Record<string, any>) {
         'pharmaceutical_form',
         'description',
         'price_cents',
+        'box_price_cents',
         'cost_cents',
         'stock',
         'min_stock',

@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(200) NOT NULL,
     description TEXT,
     price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
+    box_price_cents INTEGER DEFAULT 0 CHECK (box_price_cents >= 0),
     cost_cents INTEGER NOT NULL DEFAULT 0 CHECK (cost_cents >= 0),
     stock INTEGER NOT NULL DEFAULT 0,
     min_stock INTEGER DEFAULT 3 CHECK (min_stock >= 0),
