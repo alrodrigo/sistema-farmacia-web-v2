@@ -569,6 +569,56 @@ END;
 $$;
 
 -- ==============================================================================
+-- 8.5. PROCEDIMIENTO ADMINISTRATIVO: RESETEAR CONTRASEÑA DE USUARIO (EXCLUSIVO ADMIN)
+-- ==============================================================================
+
+CREATE OR REPLACE FUNCTION public.admin_reset_user_password(
+    p_target_user_id UUID,
+    p_new_password TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions, pg_temp
+AS $$
+DECLARE
+    v_caller_role VARCHAR;
+    v_target_user RECORD;
+BEGIN
+    IF LENGTH(TRIM(p_new_password)) < 6 THEN
+        RAISE EXCEPTION 'La contraseña debe contener al menos 6 caracteres';
+    END IF;
+
+    SELECT r.name INTO v_caller_role
+    FROM public.user_profiles up
+    JOIN public.roles r ON up.role_id = r.id
+    WHERE up.id = auth.uid() AND up.is_active = true;
+
+    IF v_caller_role IS NULL OR LOWER(v_caller_role) <> 'admin' THEN
+        RAISE EXCEPTION 'Operación denegada: Solo un Administrador activo tiene autorización para cambiar contraseñas';
+    END IF;
+
+    SELECT * INTO v_target_user FROM auth.users WHERE id = p_target_user_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El usuario objetivo no existe en el sistema de autenticación';
+    END IF;
+
+    UPDATE auth.users
+    SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
+        updated_at = NOW()
+    WHERE id = p_target_user_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'message', 'Contraseña actualizada exitosamente por el administrador'
+    );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.admin_reset_user_password FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_reset_user_password TO authenticated;
+
+-- ==============================================================================
 -- 9. SEMILLERO INICIAL: ROLES, PERMISOS ORTOGONALES Y CONFIGURACIÓN BASE
 -- ==============================================================================
 

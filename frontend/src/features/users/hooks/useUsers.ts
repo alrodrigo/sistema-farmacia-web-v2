@@ -12,6 +12,7 @@ import {
     updateUserProfile,
     toggleUserStatus,
     deleteUser,
+    adminResetUserPassword,
     createRole,
     updateRole,
     deleteRole,
@@ -127,7 +128,13 @@ export function useUserMutations() {
         onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
     });
 
-    return { createUserMut, updateProfileMut, toggleStatusMut, deleteUserMut };
+    const resetPasswordMut = useMutation({
+        mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
+            adminResetUserPassword(userId, newPassword),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    });
+
+    return { createUserMut, updateProfileMut, toggleStatusMut, deleteUserMut, resetPasswordMut };
 }
 
 export function useRoleMutations() {

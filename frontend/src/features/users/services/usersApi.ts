@@ -169,6 +169,15 @@ export async function deleteUser(userId: string) {
     if (error) throw error;
 }
 
+export async function adminResetUserPassword(targetUserId: string, newPassword: string) {
+    const { data, error } = await supabase.rpc('admin_reset_user_password', {
+        p_target_user_id: targetUserId,
+        p_new_password: newPassword,
+    });
+    if (error) throw error;
+    return data;
+}
+
 // ==================== ROLES ====================
 
 export async function getRoles(): Promise<RoleRow[]> {

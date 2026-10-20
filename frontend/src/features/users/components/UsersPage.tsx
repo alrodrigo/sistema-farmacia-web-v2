@@ -10,7 +10,7 @@ export default function UsersPage() {
     const { user: currentUser, setUser } = useAuthStore();
     const { data: users = [], isLoading } = useUsers();
     const { data: roles = [], isLoading: isLoadingRoles } = useRoles();
-    const { toggleStatusMut, updateProfileMut, createUserMut } = useUserMutations();
+    const { toggleStatusMut, updateProfileMut, createUserMut, resetPasswordMut } = useUserMutations();
 
     // Permisos dinámicos granulares RBAC
     const canViewUsers = useHasPermission('users:view');
@@ -40,6 +40,13 @@ export default function UsersPage() {
     const [newPassword, setNewPassword] = useState('');
     const [newName, setNewName] = useState('');
     const [newRoleId, setNewRoleId] = useState('');
+
+    // Estado del Modal de Cambio de Contraseña (Exclusivo Administrador)
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordTargetUser, setPasswordTargetUser] = useState<any | null>(null);
+    const [newPasswordVal, setNewPasswordVal] = useState('');
+    const [confirmPasswordVal, setConfirmPasswordVal] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     // Métricas calculadas para los KPIs
     const totalUsers = users.length;
@@ -125,6 +132,58 @@ export default function UsersPage() {
                     toast.success(`Cuenta para ${newName} creada exitosamente`, 'Usuario Registrado');
                 },
                 onError: (err: any) => toast.error(err.message, 'Error al crear usuario'),
+            }
+        );
+    };
+
+    const openPasswordModal = (user: any) => {
+        if (!canEditUser) return;
+        setPasswordTargetUser(user);
+        setNewPasswordVal('');
+        setConfirmPasswordVal('');
+        setShowPassword(false);
+        setIsPasswordModalOpen(true);
+    };
+
+    const generateSuggestedPassword = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+        let pass = 'Far-';
+        for (let i = 0; i < 6; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setNewPasswordVal(pass);
+        setConfirmPasswordVal(pass);
+        setShowPassword(true);
+        toast.info(`Clave sugerida: ${pass}`, 'Contraseña Temporal Creada');
+    };
+
+    const handleResetPassword = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!canEditUser || !passwordTargetUser) return;
+
+        if (newPasswordVal.trim().length < 6) {
+            toast.warning('La contraseña debe contener al menos 6 caracteres.', 'Longitud Insuficiente');
+            return;
+        }
+
+        if (newPasswordVal !== confirmPasswordVal) {
+            toast.error('Las contraseñas no coinciden. Por favor verifícalas.', 'Error de Confirmación');
+            return;
+        }
+
+        resetPasswordMut.mutate(
+            { userId: passwordTargetUser.id, newPassword: newPasswordVal },
+            {
+                onSuccess: () => {
+                    setIsPasswordModalOpen(false);
+                    toast.success(
+                        `La contraseña de ${passwordTargetUser.full_name} fue actualizada exitosamente.`,
+                        'Contraseña Actualizada'
+                    );
+                },
+                onError: (err: any) => {
+                    toast.error(err.message || 'Error al actualizar la contraseña', 'Error de Seguridad');
+                },
             }
         );
     };
@@ -511,20 +570,34 @@ export default function UsersPage() {
                                                 {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                                             </td>
 
-                                            {/* Botón de Editar */}
+                                            {/* Botones de Acción (Clave y Editar) */}
                                             <td className="px-6 text-right">
-                                                {canEditUser ? (
-                                                    <button
-                                                        onClick={() => openEditModal(user)}
-                                                        className="inline-flex items-center gap-1 text-secondary hover:text-primary hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors font-semibold text-xs border border-surface-container cursor-pointer"
-                                                        title="Editar Nombre y Rol"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[16px]">edit</span>
-                                                        <span>Editar</span>
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-secondary/50 text-xs">-</span>
-                                                )}
+                                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                                    {canEditUser && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openPasswordModal(user)}
+                                                            className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-lg transition-colors font-semibold text-xs border border-amber-500/30 cursor-pointer"
+                                                            title="Restablecer o Cambiar Contraseña (Solo Admin)"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[16px]">key</span>
+                                                            <span className="hidden sm:inline">Clave</span>
+                                                        </button>
+                                                    )}
+                                                    {canEditUser ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEditModal(user)}
+                                                            className="inline-flex items-center gap-1 text-secondary hover:text-primary hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors font-semibold text-xs border border-surface-container cursor-pointer"
+                                                            title="Editar Nombre y Rol"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                            <span>Editar</span>
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-secondary/50 text-xs">-</span>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -707,6 +780,140 @@ export default function UsersPage() {
                                     className="bg-primary hover:bg-primary-container text-on-primary px-5 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                                 >
                                     {createUserMut.isPending ? 'Registrando...' : 'Registrar Personal'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL DE CAMBIO DE CONTRASEÑA (EXCLUSIVO ADMINISTRADOR) */}
+            {isPasswordModalOpen && passwordTargetUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden border border-surface-container">
+                        <div className="p-5 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[22px]">key</span>
+                                </span>
+                                <div>
+                                    <h2 className="text-base font-bold text-on-surface">Cambiar Contraseña</h2>
+                                    <span className="text-[11px] text-secondary">Acción exclusiva de Administrador</span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsPasswordModalOpen(false)}
+                                className="text-secondary hover:text-error transition-colors p-1 rounded-lg hover:bg-surface-container"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">close</span>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleResetPassword} className="p-6 flex flex-col gap-4">
+                            {/* Información del Colaborador */}
+                            <div className="p-3.5 rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[11px] uppercase tracking-wider font-bold text-secondary">Colaborador</span>
+                                    <span className="text-sm font-bold text-on-surface">{passwordTargetUser.full_name}</span>
+                                </div>
+                                <span
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${getRoleBadgeStyle(
+                                        passwordTargetUser.roles?.name
+                                    )}`}
+                                >
+                                    <span className="material-symbols-outlined text-[13px]">shield</span>
+                                    <span>{passwordTargetUser.roles?.name ? passwordTargetUser.roles.name.toUpperCase() : 'USUARIO'}</span>
+                                </span>
+                            </div>
+
+                            {/* Campo Nueva Contraseña */}
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-on-surface">
+                                        Nueva Contraseña <span className="text-error">*</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={generateSuggestedPassword}
+                                        className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1"
+                                    >
+                                        <span className="material-symbols-outlined text-[14px]">auto_fix</span>
+                                        <span>Generar Clave</span>
+                                    </button>
+                                </div>
+                                <div className="relative flex items-center">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        required
+                                        minLength={6}
+                                        value={newPasswordVal}
+                                        onChange={(e) => setNewPasswordVal(e.target.value)}
+                                        placeholder="Mínimo 6 caracteres"
+                                        className="w-full px-3.5 py-2.5 pr-10 rounded-lg bg-surface-container-low text-on-surface text-sm border border-surface-container focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-2.5 text-secondary hover:text-on-surface transition-colors p-1"
+                                        tabIndex={-1}
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">
+                                            {showPassword ? 'visibility_off' : 'visibility'}
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Campo Confirmar Contraseña */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-on-surface">
+                                    Confirmar Nueva Contraseña <span className="text-error">*</span>
+                                </label>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    minLength={6}
+                                    value={confirmPasswordVal}
+                                    onChange={(e) => setConfirmPasswordVal(e.target.value)}
+                                    placeholder="Repite la nueva contraseña"
+                                    className="w-full px-3.5 py-2.5 rounded-lg bg-surface-container-low text-on-surface text-sm border border-surface-container focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                                />
+                                {newPasswordVal && confirmPasswordVal && newPasswordVal !== confirmPasswordVal && (
+                                    <span className="text-[11px] text-error flex items-center gap-1 mt-0.5">
+                                        <span className="material-symbols-outlined text-[14px]">error</span>
+                                        <span>Las contraseñas no coinciden</span>
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Aviso de Seguridad Institucional */}
+                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
+                                <span className="material-symbols-outlined text-[18px] text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                                    lock_reset
+                                </span>
+                                <span className="leading-relaxed">
+                                    El cambio se aplicará de inmediato en la base de datos de autenticación. Entrega la nueva contraseña de forma segura al colaborador para su próximo inicio de sesión.
+                                </span>
+                            </div>
+
+                            {/* Botones de Acción */}
+                            <div className="flex justify-end gap-3 mt-2 pt-4 border-t border-surface-container">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPasswordModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg font-semibold text-sm text-secondary hover:bg-surface-container transition-colors cursor-pointer"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={resetPasswordMut.isPending || (Boolean(newPasswordVal) && newPasswordVal !== confirmPasswordVal)}
+                                    className="bg-primary hover:bg-primary-container text-on-primary px-5 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                                    <span>{resetPasswordMut.isPending ? 'Actualizando...' : 'Guardar Nueva Contraseña'}</span>
                                 </button>
                             </div>
                         </form>

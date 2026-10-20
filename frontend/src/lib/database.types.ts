@@ -321,6 +321,9 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
+            "admin_reset_user_password":
+{ Args: { "p_new_password": string,"p_target_user_id": string }; Returns: Json
+                           },
             "cancel_sale":
 { Args: { "p_reason"?: string,"p_sale_id": string,"p_user_id": string }; Returns: Json
                            },
