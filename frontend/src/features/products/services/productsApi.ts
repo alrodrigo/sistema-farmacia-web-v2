@@ -13,19 +13,38 @@ export type ProductWithDetails = ProductRow & {
 };
 
 export async function getProducts(): Promise<ProductWithDetails[]> {
-    const { data, error } = await supabase
-        .from('products')
-        .select(`
-      *,
-      categories (name),
-      suppliers (name),
-      product_batches (id, lot_number, expiration_date, stock, cost_cents, created_at)
-    `)
-        .order('created_at', { ascending: false });
+    const allProducts: ProductWithDetails[] = [];
+    const pageSize = 1000;
+    let from = 0;
+    let hasMore = true;
 
-    if (error) throw error;
-    // Supabase devuelve un array que coincide con nuestra interfaz extendida
-    return data as unknown as ProductWithDetails[];
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from('products')
+            .select(`
+                *,
+                categories (name),
+                suppliers (name),
+                product_batches (id, lot_number, expiration_date, stock, cost_cents, created_at)
+            `)
+            .order('name', { ascending: true })
+            .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            allProducts.push(...(data as unknown as ProductWithDetails[]));
+            if (data.length < pageSize) {
+                hasMore = false;
+            } else {
+                from += pageSize;
+            }
+        }
+    }
+
+    return allProducts;
 }
 
 // Sanitiza cualquier payload para enviar estrictamente las columnas reales de la tabla 'products'
