@@ -8,24 +8,56 @@ import type { CategoryPayload } from '../services/categoriesApi';
 import { toast } from '@/stores/toastStore';
 import { confirmDialog } from '@/stores/confirmModalStore';
 
+// Helper para normalizar nombres de iconos (incluyendo mapeo de FontAwesome heredado de Firebase a Material Symbols)
+export function getCategoryMaterialIcon(icon?: string | null): string {
+    if (!icon) return 'category';
+    const lower = icon.toLowerCase().trim();
+
+    // Mapeo automático de nombres FontAwesome heredados de Firebase
+    if (lower.includes('baby') || lower.includes('child') || lower.includes('matern')) return 'child_care';
+    if (lower.includes('eye-dropper') || lower.includes('dropper') || lower.includes('flask')) return 'science';
+    if (lower.includes('pill') || lower.includes('capsule') || lower.includes('tablets') || lower.includes('med')) return 'medication';
+    if (lower.includes('syringe') || lower.includes('needle') || lower.includes('inject')) return 'vaccines';
+    if (lower.includes('heart')) return 'cardiology';
+    if (lower.includes('shield') || lower.includes('protect')) return 'health_and_safety';
+    if (lower.includes('soap') || lower.includes('bath') || lower.includes('spa')) return 'spa';
+    if (lower.includes('bandage') || lower.includes('aid')) return 'sanitizer';
+    if (lower.includes('tooth') || lower.includes('teeth') || lower.includes('dental')) return 'dentistry';
+    if (lower.includes('apple') || lower.includes('nutrition') || lower.includes('diet')) return 'nutrition';
+    if (lower.includes('drink') || lower.includes('beverage') || lower.includes('bebida')) return 'local_cafe';
+    if (lower.includes('condom') || lower.includes('preservativo')) return 'favorite';
+    if (lower.includes('lab') || lower.includes('quimic') || lower.includes('reactiv')) return 'biotech';
+
+    // Si empieza con "fa-" o tiene caracteres no alfanuméricos de Material Symbols, usar fallback seguro
+    if (lower.startsWith('fa-') || lower.includes('-') || lower.includes('#')) {
+        return 'category';
+    }
+
+    return lower;
+}
+
 // Catálogo de iconos farmacéuticos seleccionables para el Administrador
 const AVAILABLE_ICONS = [
-    { id: 'medication', label: 'Medicamento' },
-    { id: 'pill', label: 'Comprimidos' },
+    { id: 'medication', label: 'Medicamento General' },
+    { id: 'pill', label: 'Comprimidos / Cápsulas' },
     { id: 'vaccines', label: 'Antibióticos / Inyectables' },
+    { id: 'child_care', label: 'Bebé y Maternidad' },
     { id: 'healing', label: 'Gastro / Digestivo' },
     { id: 'cardiology', label: 'Cardiovascular' },
-    { id: 'sanitizer', label: 'Curación / Antiséptico' },
-    { id: 'lock', label: 'Controlado / Psicotrópico' },
+    { id: 'sanitizer', label: 'Curación / Desinfección' },
+    { id: 'spa', label: 'Cuidado Personal / Piel' },
+    { id: 'local_cafe', label: 'Bebidas e Hidratación' },
+    { id: 'favorite', label: 'Salud Sexual / Preservativos' },
+    { id: 'biotech', label: 'Laboratorio / Reactivos' },
+    { id: 'science', label: 'Fórmulas y Química' },
     { id: 'nutrition', label: 'Vitaminas / Suplementos' },
     { id: 'air', label: 'Respiratorio / Tos' },
-    { id: 'dermatology', label: 'Dermatología / Piel' },
     { id: 'visibility', label: 'Oftalmología / Ojos' },
-    { id: 'child_care', label: 'Pediatría / Infantil' },
-    { id: 'science', label: 'Laboratorio / Fórmulas' },
-    { id: 'fluid_balance', label: 'Sueros / Soluciones' },
-    { id: 'health_and_safety', label: 'Higiene / Cuidado' },
+    { id: 'health_and_safety', label: 'Higiene / Seguridad' },
     { id: 'emergency', label: 'Urgencias / Botiquín' },
+    { id: 'lock', label: 'Controlado / Psicotrópico' },
+    { id: 'fluid_balance', label: 'Sueros / Soluciones' },
+    { id: 'category', label: 'Otros / Misceláneos' },
 ];
 
 export default function CategoriesPage() {
@@ -65,7 +97,7 @@ export default function CategoriesPage() {
         if (!canEdit) return;
         setEditingCategory(cat);
         setFormName(cat.name);
-        setFormIcon(cat.icon || 'medication');
+        setFormIcon(getCategoryMaterialIcon(cat.icon));
         setFormDescription(cat.description || '');
         setIsFormOpen(true);
     };
@@ -163,7 +195,7 @@ export default function CategoriesPage() {
 
             return {
                 ...cat,
-                icon: cat.icon || 'medication',
+                icon: getCategoryMaterialIcon(cat.icon),
                 description: cat.description || '',
                 skusCount,
                 rxCount,
@@ -582,8 +614,8 @@ export default function CategoriesPage() {
                                             {/* Icono y Nombre */}
                                             <td className="py-3.5 px-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-colors border border-surface-container-high shadow-xs">
-                                                        <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+                                                    <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-colors border border-surface-container-high shadow-xs overflow-hidden select-none">
+                                                        <span className="material-symbols-outlined text-[22px] select-none">{getCategoryMaterialIcon(cat.icon)}</span>
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="font-bold text-on-surface truncate text-sm">{cat.name}</span>
@@ -719,8 +751,8 @@ export default function CategoriesPage() {
                                 <div>
                                     <div className="flex items-start justify-between gap-2 mb-2">
                                         <div className="flex items-center gap-2.5">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-xs border border-surface-container">
-                                                <span className="material-symbols-outlined text-[22px]">{cat.icon}</span>
+                                            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-xs border border-surface-container overflow-hidden select-none">
+                                                <span className="material-symbols-outlined text-[22px] select-none">{getCategoryMaterialIcon(cat.icon)}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <h3 className="font-bold text-on-surface text-sm truncate">{cat.name}</h3>
@@ -888,8 +920,8 @@ export default function CategoriesPage() {
                             {/* VISTA PREVIA */}
                             {formName.trim() && (
                                 <div className="p-3.5 rounded-xl bg-surface-container-low border border-surface-container flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs">
-                                        <span className="material-symbols-outlined text-[22px]">{formIcon}</span>
+                                    <div className="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs overflow-hidden select-none">
+                                        <span className="material-symbols-outlined text-[22px] select-none">{getCategoryMaterialIcon(formIcon)}</span>
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <span className="font-bold text-on-surface text-sm truncate">{formName}</span>
